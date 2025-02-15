@@ -1,16 +1,19 @@
 export class WhereBetween {
-	constructor(alias, floor, ceiling) {
-		this._alias = alias;
-		this._floor = floor;
-		this._ceiling = ceiling;
-		this._negative = false;
+	private negative = false;
+
+	constructor(
+		private readonly alias: string,
+		private readonly floorParam: string,
+		private readonly ceilingParam: string,
+	) {}
+
+	public setNegative(): this {
+		this.negative = true;
+
+		return this;
 	}
 
-	setNegative() {
-		this._negative = true;
-	}
-
-	toString() {
+	public toString(): string {
 		const negative = this._negative ? "NOT " : "";
 
 		return `${negative}$${this._floor} <= ${this._alias} <= $${this._ceiling}`;

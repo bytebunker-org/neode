@@ -1,21 +1,24 @@
 import neo4j from "neo4j-driver";
-import type {Neode} from "./Neode.js";
-import type {Model} from "./Model.js";
-import {Entity} from "./Entity.js";
-import {DeleteNode} from "./Services/DeleteNode.js";
-import {RelationshipType} from "./RelationshipType.js";
-import {RelateTo} from "./Services/RelateTo.js";
+import { Entity } from "./Entity.js";
+import type { Model } from "./Model.js";
+import type { Neode } from "./Neode.js";
+import type { Relationship } from "./Relationship.js";
+import { RelationshipType } from "./RelationshipType.js";
+import { DeleteNode } from "./Services/DeleteNode.js";
+import { DetachFrom } from "./Services/DetachFrom.js";
+import { RelateTo } from "./Services/RelateTo.js";
+import type { EntityPropertyMap, SerializedGraph } from "./types.js";
 
 /**
  * Node Container
  */
-export class Node<T> extends Entity {
+export class Node<T extends Record<string, unknown>> extends Entity<T> {
 	private readonly _neode: Neode;
 	private readonly _model: Model<T>;
-	private readonly _identity: number;
+	private readonly _identity: neo4j.Integer;
 	private readonly _labels: string[];
-	private _properties: Map<string, unknown>;
-	private _eager: Map<string, unknown>;
+	private readonly _properties: EntityPropertyMap<T>;
+	private _eager: EntityPropertyMap<T>;
 
 	private _deleted = false;
 
@@ -29,7 +32,14 @@ export class Node<T> extends Entity {
 	 * @param properties Property Map
 	 * @param eager Eagerly loaded values
 	 */
-	constructor(neode: Neode, model: Model<T>, identity: number, labels: string[], properties: Map<K,V> = new Map<K,V>(), eager = new Map()) {
+	constructor(
+		neode: Neode,
+		model: Model<T>,
+		identity: neo4j.Integer,
+		labels: string[],
+		properties: EntityPropertyMap<T> = new Map() as EntityPropertyMap<T>,
+		eager: EntityPropertyMap<T> = new Map() as EntityPropertyMap<T>,
+	) {
 		super();
 
 		this._neode = neode;
@@ -41,9 +51,23 @@ export class Node<T> extends Entity {
 	}
 
 	/**
+	 * Get Internal Node ID
+	 */
+	public override get id(): number {
+		return this._identity.toInt();
+	}
+
+	/**
+	 * Get Internal Node ID
+	 */
+	public override get identity(): neo4j.Integer {
+		return this._identity;
+	}
+
+	/**
 	 * Get the Model for this Node
 	 */
-	public get model(): Model<T> {
+	public override get model(): Model<T> {
 		return this._model;
 	}
 
@@ -52,6 +76,14 @@ export class Node<T> extends Entity {
 	 */
 	public get labels(): string[] {
 		return this._labels;
+	}
+
+	public override get internalProperties(): EntityPropertyMap<T> {
+		return this._properties;
+	}
+
+	public override get internalEagerProperties(): EntityPropertyMap<T> {
+		return this._eager;
 	}
 
 	/**
@@ -69,12 +101,7 @@ export class Node<T> extends Entity {
 	 * @param toDepth Depth to delete to (Defaults to 10)
 	 */
 	public async delete(toDepth = 10): Promise<this> {
-		await DeleteNode(
-			this._neode,
-			this._identity,
-			this._model,
-			toDepth,
-		);
+		await DeleteNode(this._neode, this._identity, this._model, toDepth);
 
 		this._deleted = true;
 
@@ -84,13 +111,21 @@ export class Node<T> extends Entity {
 	/**
 	 * Relate this node to another based on the type
 	 *
-	 * @param node            Node to relate to
-	 * @param type            Type of Relationship definition
-	 * @param properties      Properties to set against the relationships
-	 * @param force_create   Force the creation a new relationship? If false, the relationship will be merged
+	 * @param node Node to relate to
+	 * @param type Type of Relationship definition
+	 * @param properties Properties to set against the relationships
+	 * @param forceCreate Force the creation a new relationship? If false, the relationship will be merged
 	 */
-	relateTo(node: Node<unknown>, type: string, properties: Record<string, unknown> = {}, force_create = false): Promise<> {
-		const relationship = this._model.relationships().get(type);
+	public async relateTo<
+		U extends Record<string, unknown>,
+		R extends Record<string, unknown>,
+	>(
+		node: Node<T>,
+		type: string,
+		properties: R = {},
+		forceCreate = false,
+	): Promise<Relationship<R, any, any>> {
+		const relationship = this._model.relationships.get(type);
 
 		if (!(relationship instanceof RelationshipType)) {
 			return Promise.reject(
@@ -98,18 +133,17 @@ export class Node<T> extends Entity {
 			);
 		}
 
-		return RelateTo(
+		const rel = await RelateTo(
 			this._neode,
 			this,
 			node,
 			relationship,
 			properties,
-			force_create,
-		).then((rel) => {
-			this._eager.delete(type);
+			forceCreate,
+		);
+		this._eager.delete(type);
 
-			return rel;
-		});
+		return rel;
 	}
 
 	/**
@@ -130,19 +164,17 @@ export class Node<T> extends Entity {
 
 	/**
 	 * Convert Node to a JSON friendly Object
-	 *
-	 * @return {Promise}
 	 */
-	toJson(): Promise<> {
-		const output = {
-			_id: this.id(),
-			_labels: this.labels(),
+	public override toJson(): SerializedGraph {
+		const output: SerializedGraph = {
+			_id: this.id,
+			_labels: this.labels,
 		};
 
 		// Properties
-		this._model.properties().forEach((property, key) => {
-			if (property.hidden()) {
-				return;
+		for (const [key, property] of this._model.properties.entries()) {
+			if (property.hidden) {
+				continue;
 			}
 
 			if (this._properties.has(key)) {
@@ -183,7 +215,10 @@ export class Node<T> extends Entity {
 						break;
 				}
 			}
-		});
+		}
+
+		// Properties
+		this._model.properties().forEach((property, key) => {});
 
 		// Eager Promises
 		return (

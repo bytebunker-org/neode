@@ -1,13 +1,12 @@
-import Neode from '../src/index';
+import Neode from "../src";
 
 function createInstance() {
-    return Neode.fromEnv();
+	return Neode.fromEnv();
 }
 
 module.exports = createInstance;
 
-
-    /** Testing * /
+/** Testing * /
     before(done => {
         instance = require('../instance')();
         model = instance.model(label, schema);

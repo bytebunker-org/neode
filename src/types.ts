@@ -1,10 +1,16 @@
+import type Joi from "joi";
+import type {
+	RelationshipCascadePolicyEnum,
+	RelationshipDirectionEnum,
+} from "./RelationshipType.js";
+
 type PropertyType = string | number | boolean;
 
 export type TemporalPropertyTypes =
 	| "datetime"
 	| "date"
 	| "time"
-	| "localdate"
+	| "localdatetime"
 	| "localtime"
 	| "duration";
 export type NumberPropertyTypes = "number" | "int" | "integer" | "float";
@@ -18,67 +24,68 @@ export type PropertyTypes =
 	| StringPropertyTypes
 	| NodesPropertyTypes
 	| "boolean"
-	| "Point";
+	| "point";
 
-export type Direction =
-	| "direction_in"
-	| "direction_out"
-	| "direction_both"
-	| "in"
-	| "out";
+export type GenericPropertyTypes =
+	| TemporalPropertyTypes
+	| "uuid"
+	| "boolean"
+	| "point";
 
-export interface BaseNodeProperties {
+export interface BaseNodeProperties<T, S extends Joi.Schema = Joi.Schema> {
 	primary?: boolean;
 	required?: boolean;
 	unique?: boolean;
 	indexed?: boolean;
 	hidden?: boolean;
 	readonly?: boolean;
-	default?: unknown;
+
+	/**
+	 * Default value
+	 */
+	default?: T | (() => T);
+
+	/**
+	 * Extend the joi validation schema
+	 */
+	extendSchema?: (schema: S) => S;
 }
 
-export interface BaseNumberNodeProperties extends BaseNodeProperties {
+export interface BaseNumberNodeProperties
+	extends BaseNodeProperties<number, Joi.NumberSchema> {
 	/**
 	 * Minimum value of the number
 	 */
-	min: number;
+	min?: number;
 
 	/**
 	 * Maximum value of the number
 	 */
-	max: number;
+	max?: number;
 
 	/**
 	 * Is the number an integer
 	 */
-	integer: boolean;
+	integer?: boolean;
 
 	/**
 	 * Can the number handle positive value
 	 */
-	positive: boolean;
+	positive?: boolean;
 
 	/**
 	 * Can the number handle negative value
 	 */
-	negative: boolean;
+	negative?: boolean;
 
 	/**
 	 * The number has to be a multiple of
 	 */
-	multiple: number;
+	multiple?: number;
 }
 
 export interface NumberNodeProperties extends BaseNumberNodeProperties {
-	type: "number";
-}
-
-export interface IntNodeProperties extends BaseNumberNodeProperties {
-	type: "int";
-}
-
-export interface IntegerNodeProperties extends BaseNumberNodeProperties {
-	type: "integer";
+	type: "number" | "int" | "integer";
 }
 
 export interface FloatNodeProperties extends BaseNumberNodeProperties {
@@ -87,24 +94,30 @@ export interface FloatNodeProperties extends BaseNumberNodeProperties {
 	/**
 	 * Precision, decimal count
 	 */
-	precision: number;
+	precision?: number;
 }
 
-export interface StringNodeProperties extends BaseNodeProperties {
+export interface StringNodeProperties
+	extends BaseNodeProperties<string, Joi.StringSchema> {
 	type: "string";
 
-	regex:
+	/**
+	 * @deprecated use {@link BaseNodeProperties.extendSchema}
+	 */
+	regex?:
 		| RegExp
 		| {
 				pattern: RegExp;
-				invert: boolean;
-				name: string;
+				invert?: boolean;
+				name?: string;
 		  };
 
 	/**
 	 * Replace parts of the string
+	 *
+	 * @deprecated use {@link BaseNodeProperties.extendSchema}
 	 */
-	replace: {
+	replace?: {
 		/**
 		 * RegExp pattern
 		 */
@@ -113,13 +126,15 @@ export interface StringNodeProperties extends BaseNodeProperties {
 		/**
 		 * What should replace the pattern
 		 */
-		replace: string;
+		replacement: string;
 	};
 
 	/**
 	 * Should the string be in a valid email format
+	 *
+	 * @deprecated use {@link BaseNodeProperties.extendSchema}
 	 */
-	email:
+	email?:
 		| boolean
 		| {
 				/**
@@ -129,7 +144,8 @@ export interface StringNodeProperties extends BaseNodeProperties {
 		  };
 }
 
-export interface BaseRelationshipNodeProperties extends BaseNodeProperties {
+export interface BaseRelationshipNodeProperties
+	extends BaseNodeProperties<unknown> {
 	/**
 	 * Neo4J Relationship name (e.g: ACTED_IN)
 	 */
@@ -139,6 +155,8 @@ export interface BaseRelationshipNodeProperties extends BaseNodeProperties {
 	 * Target model name
 	 */
 	target: string;
+
+	alias?: string;
 
 	/**
 	 * Is the relation required to be fetch
@@ -151,19 +169,14 @@ export interface BaseRelationshipNodeProperties extends BaseNodeProperties {
 	eager?: boolean;
 
 	/**
-	 * Default value
-	 */
-	default?: unknown;
-
-	/**
 	 * Relationship direction
 	 */
-	direction: Direction;
+	direction: RelationshipDirectionEnum;
 
 	/**
 	 * Behaviour when deleting the parent object
 	 */
-	cascade?: "detach" | "delete";
+	cascade?: boolean | RelationshipCascadePolicyEnum;
 
 	/**
 	 * Relationship attached properties
@@ -173,58 +186,39 @@ export interface BaseRelationshipNodeProperties extends BaseNodeProperties {
 	};
 }
 
-export interface RelationshipsNodeProperties
-	extends BaseRelationshipNodeProperties {
-	type: "relationships";
-}
-
 export interface RelationshipNodeProperties
 	extends BaseRelationshipNodeProperties {
-	type: "relationship";
-}
-
-export interface NodesNodeProperties extends BaseRelationshipNodeProperties {
-	type: "nodes";
+	type: "relationship" | "relationships";
 }
 
 export interface NodeNodeProperties extends BaseRelationshipNodeProperties {
-	type: "node";
+	type: "node" | "nodes";
 }
 
-export interface OtherNodeProperties extends BaseNodeProperties {
-	type: PropertyTypes;
+export interface OtherNodeProperties extends BaseNodeProperties<unknown> {
+	type: GenericPropertyTypes;
 }
 
 export type NodeProperty =
 	| PropertyTypes
 	| NumberNodeProperties
-	| IntNodeProperties
-	| IntegerNodeProperties
 	| FloatNodeProperties
 	| RelationshipNodeProperties
-	| RelationshipsNodeProperties
 	| NodeNodeProperties
-	| NodesNodeProperties
 	| StringNodeProperties
 	| OtherNodeProperties;
 
 export type NodePropertyObject =
 	| NumberNodeProperties
-	| IntNodeProperties
-	| IntegerNodeProperties
 	| FloatNodeProperties
 	| RelationshipNodeProperties
-	| RelationshipsNodeProperties
 	| NodeNodeProperties
-	| NodesNodeProperties
 	| StringNodeProperties
 	| OtherNodeProperties;
 
 export type RelationshipLikePropertyObject =
 	| RelationshipNodeProperties
-	| RelationshipsNodeProperties
-	| NodeNodeProperties
-	| NodesNodeProperties;
+	| NodeNodeProperties;
 
 export type SchemaObject = {
 	labels?: string[];
@@ -239,3 +233,12 @@ export type RelationshipSchema = {
 export type Query = string | { text: string; parameters?: QueryParams };
 
 export type QueryParams = Record<string, unknown>;
+
+export type EntityPropertyMap<T extends Record<string, unknown>> =
+	T extends Record<infer K, infer V> ? Map<K, V> : never;
+
+export type SerializedGraph = Record<string, unknown> & {
+	_id: number;
+	_labels?: string[];
+	type?: string;
+};

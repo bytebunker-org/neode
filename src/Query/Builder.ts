@@ -12,14 +12,10 @@ export enum QueryMode {
 
 export class Builder {
 	private _params: Record<string, unknown> = {};
-
 	private _statements: Statement[] = [];
-
 	private _current: Statement | undefined;
-
 	private _where: WhereStatement | undefined;
-
-	private _set_count = 0;
+	private _setCount = 0;
 
 	constructor(private readonly _neode: Neode) {}
 
@@ -34,6 +30,16 @@ export class Builder {
 		this._current = new Statement(prefix);
 
 		return this;
+	}
+
+	private get current(): Statement {
+		if (!this._current) {
+			throw new Error(
+				"You must add a statement before using other builder methods",
+			);
+		}
+
+		return this._current;
 	}
 
 	/**
@@ -63,15 +69,15 @@ export class Builder {
 	 * @param  {Object|null}   properties   Inline Properties
 	 * @return {Builder}                Builder
 	 */
-	match(
+	match<T extends Record<string, unknown>>(
 		alias: string,
-		model: Model | string,
-		properties: Record<string, unknown>,
+		model: Model<T> | string,
+		properties: Partial<T>,
 	) {
 		this.whereStatement("WHERE");
 		this.statement();
 
-		this._current.match(
+		this._current?.match(
 			new Match(
 				alias,
 				model,
@@ -377,10 +383,10 @@ export class Builder {
 			});
 		} else {
 			if (value !== undefined) {
-				const alias = `set_${this._set_count}`;
+				const alias = `set_${this._setCount}`;
 				this._params[alias] = value;
 
-				this._set_count++;
+				this._setCount++;
 
 				this._current.set(property, alias, operator);
 			} else {
@@ -405,10 +411,10 @@ export class Builder {
 				this.onCreateSet(key, property[key]);
 			});
 		} else {
-			const alias = `set_${this._set_count}`;
+			const alias = `set_${this._setCount}`;
 			this._params[alias] = value;
 
-			this._set_count++;
+			this._setCount++;
 
 			this._current.onCreateSet(property, alias, operator);
 		}
@@ -430,10 +436,10 @@ export class Builder {
 				this.onMatchSet(key, property[key]);
 			});
 		} else {
-			const alias = `set_${this._set_count}`;
+			const alias = `set_${this._setCount}`;
 			this._params[alias] = value;
 
-			this._set_count++;
+			this._setCount++;
 
 			this._current.onMatchSet(property, alias, operator);
 		}

@@ -1,23 +1,25 @@
 /* eslint indent: 0 */
 import neo4j from "neo4j-driver";
+import type { Model } from "./Model.js";
+import type { Property } from "./Property.js";
+import type { RelationshipType } from "./RelationshipType.js";
+import type { EntityPropertyMap } from "./types.js";
 
 /**
  * Convert a raw property into a JSON friendly format
- *
- * @param  {Property}   property
- * @param  {Mixed}      value
- * @return {Mixed}
  */
-export function valueToJson(property, value) {
+export function valueToJson(property: Property, value: unknown) {
 	if (neo4j.isInt(value)) {
 		return value.toNumber();
 	} else if (
-		neo4j.temporal.isDate(value) ||
-		neo4j.temporal.isDateTime(value) ||
-		neo4j.temporal.isTime(value) ||
-		neo4j.temporal.isLocalDateTime(value) ||
-		neo4j.temporal.isLocalTime(value) ||
-		neo4j.temporal.isDuration(value)
+		value &&
+		typeof value === "object" &&
+		(neo4j.temporal.isDate(value) ||
+			neo4j.temporal.isDateTime(value) ||
+			neo4j.temporal.isTime(value) ||
+			neo4j.temporal.isLocalDateTime(value) ||
+			neo4j.temporal.isLocalTime(value) ||
+			neo4j.temporal.isDuration(value))
 	) {
 		return value.toString();
 	} else if (neo4j.spatial.isPoint(value)) {
@@ -25,17 +27,14 @@ export function valueToJson(property, value) {
 			// SRID values: @https://neo4j.com/docs/developer-manual/current/cypher/functions/spatial/
 			case "4326": // WGS 84 2D
 				return { longitude: value.x, latitude: value.y };
-
 			case "4979": // WGS 84 3D
 				return {
 					longitude: value.x,
 					latitude: value.y,
 					height: value.z,
 				};
-
 			case "7203": // Cartesian 2D
 				return { x: value.x, y: value.y };
-
 			case "9157": // Cartesian 3D
 				return { x: value.x, y: value.y, z: value.z };
 		}
@@ -46,88 +45,93 @@ export function valueToJson(property, value) {
 
 /**
  * Convert a property into a cypher value
- *
- * @param {Property} property
- * @param {Mixed}    value
- * @return {Mixed}
  */
-export function valueToCypher(property, value) {
-	if (property.convertToInteger() && value !== null && value !== undefined) {
-		value = neo4j.int(value);
+export function valueToCypher(property: Property, value: unknown): unknown {
+	if (property.shouldConvertToInteger && value && typeof value === "number") {
+		return neo4j.int(value);
 	}
 
 	return value;
 }
 
-export class Entity {
+export abstract class Entity<T extends Record<string, unknown>> {
 	/**
 	 * Get Internal Node ID
-	 *
-	 * @return {int}
 	 */
-	id() {
-		return this._identity.toNumber();
-	}
+	public abstract get id(): number;
 
 	/**
 	 * Return internal ID as a Neo4j Integer
-	 *
-	 * @return {Integer}
 	 */
-	identity() {
-		return this._identity;
-	}
+	public abstract get identity(): neo4j.Integer;
+
+	/**
+	 * Get the Model or RelationshipType for this Entity
+	 */
+	public abstract get model(): Model<T> | RelationshipType<T>;
+
+	protected abstract get internalProperties(): EntityPropertyMap<T>;
+
+	protected abstract get internalEagerProperties():
+		| EntityPropertyMap<T>
+		| undefined;
 
 	/**
 	 * Return the Node's properties as an Object
 	 *
 	 * @return {Object}
 	 */
-	properties() {
-		const output = {};
+	public properties(): T {
+		const output: Record<string, unknown> = {};
 
-		const model = this._model || this._definition;
-
-		model.properties().forEach((property, key) => {
-			if (!property.hidden() && this._properties.has(key)) {
-				output[key] = this.valueToJson(
+		for (const [key, property] of this.model.properties.entries()) {
+			if (!property.hidden && this.internalProperties.has(key)) {
+				output[key] = valueToJson(
 					property,
-					this._properties.get(key),
+					this.internalProperties.get(key),
 				);
 			}
-		});
+		}
 
-		return output;
+		return output as T;
 	}
 
 	/**
 	 * Get a property for this node
 	 *
-	 * @param  {String} property Name of property
-	 * @param  {or}     default  Default value to supply if none exists
-	 * @return {mixed}
+	 * @param property Name of property
 	 */
-	get(property, or = null) {
+	get<K extends keyof T & string>(property: K): T[K] | undefined;
+	/**
+	 * Get a property for this node
+	 *
+	 * @param property Name of property
+	 * @param fallback  Default value to supply if none exists
+	 */
+	get<K extends keyof T & string>(property: K, fallback: T[K]): T[K];
+	get<K extends keyof T & string>(
+		property: K,
+		fallback?: T[K],
+	): T[K] | undefined {
 		// If property is set, return that
-		if (this._properties.has(property)) {
-			return this._properties.get(property);
+		if (this.internalProperties.has(property)) {
+			return this.internalProperties.get(property) as T[K];
 		}
 		// If property has been set in eager, return that
-		else if (this._eager && this._eager.has(property)) {
-			return this._eager.get(property);
+		else if (this.internalEagerProperties?.has(property)) {
+			return this.internalEagerProperties?.get(property) as T[K];
 		}
 
-		return or;
+		return fallback;
 	}
 
 	/**
 	 * Convert a raw property into a JSON friendly format
-	 *
-	 * @param  {Property}   property
-	 * @param  {Mixed}      value
-	 * @return {Mixed}
+	 * TODO: Should this actually convert a property on this entity? Check the original code
 	 */
-	valueToJson(property, value) {
+	protected valueToJson(property: Property, value: unknown): unknown {
 		return valueToJson(property, value);
 	}
+
+	public abstract toJson(): Record<string, unknown>;
 }

@@ -1,29 +1,50 @@
-import Entity from "./Entity";
-import { DIRECTION_IN } from "./RelationshipType";
-import DeleteRelationship from "./Services/DeleteRelationship";
-import UpdateRelationship from "./Services/UpdateRelationship";
+import type neo4j from "neo4j-driver";
+import { Entity } from "./Entity.js";
+import type { Neode } from "./Neode.js";
+import type { Node } from "./Node.js";
+import {
+	RelationshipDirectionEnum,
+	type RelationshipType,
+} from "./RelationshipType.js";
+import { DeleteRelationship } from "./Services/DeleteRelationship.js";
+import { UpdateRelationship } from "./Services/UpdateRelationship.js";
+import type { EntityPropertyMap, SerializedGraph } from "./types.js";
 
-export class Relationship extends Entity {
+export class Relationship<
+	T extends Record<string, unknown>,
+	S extends Record<string, unknown>,
+	E extends Record<string, unknown>,
+> extends Entity<T> {
+	private readonly _neode: Neode;
+	private readonly _definition: RelationshipType<T>;
+	private readonly _identity: neo4j.Integer;
+	private readonly _type: string;
+	private readonly _properties: EntityPropertyMap<T>;
+	private readonly _start: Node<S>;
+	private readonly _end: Node<E>;
+	private readonly _nodeAlias?: string;
+	private _deleted = false;
+
 	/**
 	 *
-	 * @param {Neode}            neode          Neode instance
-	 * @param {RelationshipType} definition     Relationship type definition
-	 * @param {Integer}          identity       Identity
-	 * @param {String}           relationship   Relationship type
-	 * @param {Map}              properties     Map of properties for the relationship
-	 * @param {Node}             start          Start Node
-	 * @param {Node}             end            End Node
-	 * @param {String}           node_alias     Alias given to the Node when converting to JSON
+	 * @param neode Neode instance
+	 * @param definition Relationship type definition
+	 * @param identity Identity
+	 * @param type Relationship type
+	 * @param properties Map of properties for the relationship
+	 * @param start Start Node
+	 * @param end End Node
+	 * @param nodeAlias Alias given to the Node when converting to JSON
 	 */
 	constructor(
-		neode,
-		definition,
-		identity,
-		type,
-		properties,
-		start,
-		end,
-		node_alias,
+		neode: Neode,
+		definition: RelationshipType<T>,
+		identity: neo4j.Integer,
+		type: string,
+		properties: EntityPropertyMap<T> | undefined,
+		start: Node<S>,
+		end: Node<E>,
+		nodeAlias?: string,
 	) {
 		super();
 
@@ -31,43 +52,63 @@ export class Relationship extends Entity {
 		this._definition = definition;
 		this._identity = identity;
 		this._type = type;
-		this._properties = properties || new Map();
+		this._properties = properties ?? (new Map() as EntityPropertyMap<T>);
 		this._start = start;
 		this._end = end;
-		this._node_alias = node_alias;
+		this._nodeAlias = nodeAlias;
 	}
 
 	/**
 	 * Get the definition for this relationship
-	 *
-	 * @return {Definition}
 	 */
-	definition() {
+	public get definition(): RelationshipType<T> {
 		return this._definition;
 	}
 
 	/**
 	 * Get the relationship type
 	 */
-	type() {
+	public get type(): string {
 		return this._type;
 	}
 
 	/**
-	 * Get the start node for this relationship
-	 *
-	 * @return {Node}
+	 * Get Internal Relationship ID
 	 */
-	startNode() {
+	public override get id(): number {
+		return this._identity.toInt();
+	}
+
+	/**
+	 * Get Internal Relationship ID
+	 */
+	public override get identity(): neo4j.Integer {
+		return this._identity;
+	}
+
+	public override get model(): RelationshipType<T> {
+		return this.definition;
+	}
+
+	protected override get internalProperties(): EntityPropertyMap<T> {
+		return this._properties;
+	}
+
+	protected override get internalEagerProperties(): undefined {
+		return undefined;
+	}
+
+	/**
+	 * Get the start node for this relationship
+	 */
+	public get startNode(): Node<S> {
 		return this._start;
 	}
 
 	/**
 	 * Get the start node for this relationship
-	 *
-	 * @return {Node}
 	 */
-	endNode() {
+	public get endNode(): Node<E> {
 		return this._end;
 	}
 
@@ -75,29 +116,27 @@ export class Relationship extends Entity {
 	 * Get the node on the opposite end of the Relationship to the subject
 	 * (ie if direction is in, get the end node, otherwise get the start node)
 	 */
-	otherNode() {
-		return this._definition.direction() == DIRECTION_IN
-			? this.startNode()
-			: this.endNode();
+	public get otherNode(): Node<S> | Node<E> {
+		return this._definition.direction === RelationshipDirectionEnum.IN
+			? this.startNode
+			: this.endNode;
 	}
 
 	/**
 	 * Convert Relationship to a JSON friendly Object
-	 *
-	 * @return {Promise}
 	 */
-	toJson() {
-		const output = {
-			_id: this.id(),
-			_type: this.type(),
+	public override toJson(): SerializedGraph {
+		const output: SerializedGraph = {
+			_id: this.id,
+			_type: this.type,
 		};
 
-		const definition = this.definition();
+		const definition = this.definition;
 
 		// Properties
-		definition.properties().forEach((property, key) => {
-			if (property.hidden()) {
-				return;
+		for (const [key, property] of definition.properties.entries()) {
+			if (property.hidden) {
+				continue;
 			}
 
 			if (this._properties.has(key)) {
@@ -106,61 +145,51 @@ export class Relationship extends Entity {
 					this._properties.get(key),
 				);
 			}
-		});
+		}
 
 		// Get Other Node
-		return this.otherNode()
-			.toJson()
-			.then((json) => {
-				output[definition.nodeAlias()] = json;
+		output[definition.nodeAlias] = this.otherNode.toJson();
 
-				return output;
-			});
+		return output;
 	}
 
 	/**
 	 * Update the properties for this relationship
 	 *
-	 * @param {Object} properties  New properties
-	 * @return {Node}
+	 * @param properties New properties
 	 */
-	update(properties) {
+	public async update(properties: Record<string, unknown>): Promise<this> {
 		// TODO: Temporary fix, add the properties to the properties map
 		// Sorry, but it's easier than hacking the validator
-		this._definition.properties().forEach((property) => {
-			const name = property.name();
+		for (const property of this._definition.properties.values()) {
+			const name = property.name;
 
-			if (property.required() && !properties.hasOwnProperty(name)) {
+			if (property.required && !Object.hasOwn(properties, name)) {
 				properties[name] = this._properties.get(name);
 			}
-		});
+		}
 
-		return UpdateRelationship(
+		const updatedProperties = await UpdateRelationship(
 			this._neode,
 			this._definition,
 			this._identity,
 			properties,
-		)
-			.then((properties) => {
-				Object.entries(properties).forEach(([key, value]) => {
-					this._properties.set(key, value);
-				});
-			})
-			.then(() => {
-				return this;
-			});
+		);
+
+		for (const [key, value] of Object.entries(updatedProperties)) {
+			this._properties.set(key, value);
+		}
+
+		return this;
 	}
 
 	/**
 	 * Delete this relationship from the Graph
-	 *
-	 * @return {Promise}
 	 */
-	delete() {
-		return DeleteRelationship(this._neode, this._identity).then(() => {
-			this._deleted = true;
+	public async delete(): Promise<this> {
+		await DeleteRelationship(this._neode, this._identity);
+		this._deleted = true;
 
-			return this;
-		});
+		return this;
 	}
 }

@@ -1,8 +1,10 @@
+import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
 import type { Node } from "../Node.js";
-import Builder, { mode } from "../Query/Builder.js";
+import { Builder } from "../Query/Builder.js";
 import { eagerNode } from "../Query/EagerUtils.js";
 import type { Queryable } from "../Queryable.js";
+import { GenerateDefaultValues } from "./GenerateDefaultValues.js";
 /*
 import GenerateDefaultValues from './GenerateDefaultValues';
 import Node from '../Node';
@@ -13,13 +15,12 @@ import { eagerNode } from '../Query/EagerUtils';
 const MAX_CREATE_DEPTH = 99;
 const ORIGINAL_ALIAS = 'this';
 */
-import GenerateDefaultValues from "./GenerateDefaultValues.js";
 import { Validator } from "./Validator.js";
 import { ORIGINAL_ALIAS, addNodeToStatement } from "./WriteUtils.js";
 
-export function MergeOn<T>(
+export function MergeOn<T extends Record<string, unknown>>(
 	neode: Neode,
-	model: Queryable<T>,
+	model: Model<T>,
 	merge_on: Record<string, unknown>,
 	properties: Record<string, unknown>,
 ): Promise<Node<T>> {

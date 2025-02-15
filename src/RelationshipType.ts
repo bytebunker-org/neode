@@ -5,6 +5,7 @@ import type {
 	NodesPropertyTypes,
 	RelationshipLikePropertyObject,
 	RelationshipPropertyTypes,
+	SchemaObject,
 } from "./types.js";
 
 export enum RelationshipDirectionEnum {
@@ -20,13 +21,13 @@ export enum RelationshipCascadePolicyEnum {
 
 export const DEFAULT_ALIAS = "node";
 
-export class RelationshipType {
+export class RelationshipType<T extends Record<string, unknown>> {
 	private readonly _name: string;
 	private readonly _type: NodesPropertyTypes | RelationshipPropertyTypes;
 	private readonly _relationship: string;
 	private _direction: RelationshipDirectionEnum;
-	private readonly _target: string | Model<unknown> | undefined;
-	private readonly _schema: Partial<RelationshipLikePropertyObject>;
+	private readonly _target: string | Model<T> | undefined;
+	private readonly _schema: SchemaObject;
 	private readonly _eager: boolean;
 	private readonly _cascade: boolean | RelationshipCascadePolicyEnum;
 	private readonly _node_alias: string;
@@ -48,8 +49,8 @@ export class RelationshipType {
 		type: NodesPropertyTypes | RelationshipPropertyTypes,
 		relationship: string,
 		direction: RelationshipDirectionEnum,
-		target: string | Model<unknown> | undefined,
-		schema: Partial<RelationshipLikePropertyObject> = {},
+		target: string | Model<T> | undefined,
+		schema: SchemaObject = {},
 		eager = false,
 		cascade: boolean | RelationshipCascadePolicyEnum = false,
 		node_alias = DEFAULT_ALIAS,
@@ -102,14 +103,14 @@ export class RelationshipType {
 	/**
 	 * Get the target node definition
 	 */
-	public get target(): string | Model<unknown> | undefined {
+	public get target(): string | Model<T> | undefined {
 		return this._target;
 	}
 
 	/**
 	 * Get Schema object
 	 */
-	public get schema(): Partial<RelationshipLikePropertyObject> {
+	public get schema(): SchemaObject {
 		return this._schema;
 	}
 
@@ -147,10 +148,8 @@ export class RelationshipType {
 
 	/**
 	 * Get Properties defined for this relationship
-	 *
-	 * @return Map
 	 */
-	properties() {
+	public get properties(): Map<string, Property> {
 		return this._properties;
 	}
 }

@@ -18,7 +18,7 @@ npm install --save neode
 
 ### Usage
 ```javascript
-// index.js
+// index.ts
 import Neode from 'neode';
 
 const instance = new Neode('bolt://localhost:7687', 'username', 'password');
@@ -29,7 +29,7 @@ const instance = new Neode('bolt://localhost:7687', 'username', 'password');
 To initiate Neode in enterprise mode and enable enterprise features, provide a true variable as the fourth parameter.
 
 ```javascript
-// index.js
+// index.ts
 import Neode from 'neode';
 
 const instance = new Neode('bolt://localhost:7687', 'username', 'password', true);
@@ -52,7 +52,7 @@ NEO4J_ENCRYPTION=ENCRYPTION_OFF
 ```
 
 ```javascript
-// index.js
+// index.ts
 import Neode from 'neode';
 
 const instance = Neode.fromEnv();
@@ -95,7 +95,7 @@ const neode = require('neode')
 You can load a directory of models by calling the `withDirectory()` method.
 
 ```javascript
-// models/Person.js
+// models/Person.ts
 module.exports = {
   id: {
     type: 'uuid',
@@ -106,7 +106,7 @@ module.exports = {
 ```
 
 ```javascript
-// index.js
+// index.ts
 instance.withDirectory(__dirname+'/models');
 ```
 

@@ -1,71 +1,53 @@
 import { v4 as uuidV4 } from "uuid";
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
+import type { RelationshipType } from "../RelationshipType.js";
+import type { NodePropertyObject } from "../types.js";
 import { ValidationError } from "../util/ValidationError.js";
 import { CleanValue } from "./CleanValue.js";
 
-function GenerateDefaultValuesAsync(
+/**
+ * Generate default values where no values are not currently set.
+ */
+export function GenerateDefaultValues<T extends Record<string, unknown>>(
 	neode: Neode,
-	model: Model,
-	properties: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
-	const schema = model.schema();
+	model: Model<T> | RelationshipType<T>,
+	properties: T,
+): T {
+	const schema = model.schema;
 	const output: Record<string, unknown> = {};
 
-	if (!(properties instanceof Object)) {
+	if (!properties || typeof properties !== "object") {
 		throw new ValidationError(
 			"`properties` must be an object.",
 			properties,
 		);
 	}
 
-	// Get All Config
-	for (const key of Object.keys(schema)) {
-		const config =
-			typeof schema[key] === "string"
-				? { type: schema[key] }
-				: schema[key];
+	for (const [key, value] of Object.entries(schema)) {
+		const nodeProperty =
+			typeof value === "string"
+				? ({ type: schema[key] } as NodePropertyObject)
+				: (value as NodePropertyObject);
 
-		switch (config.type) {
-			case "uuid":
-				config.default = uuidV4;
-				break;
+		if (nodeProperty.type === "uuid") {
+			nodeProperty.default = uuidV4;
 		}
 
 		if (Object.hasOwn(properties, key)) {
+			// @ts-ignore
 			output[key] = properties[key];
-		}
-
-		// Set Default Value
-		else if (typeof config.default !== "undefined") {
+		} else if (typeof nodeProperty.default !== "undefined") {
 			output[key] =
-				typeof config.default === "function"
-					? config.default()
-					: config.default;
+				typeof nodeProperty.default === "function"
+					? nodeProperty.default()
+					: nodeProperty.default;
 		}
 
-		// Clean Value
 		if (output[key]) {
-			output[key] = CleanValue(config, output[key]);
+			output[key] = CleanValue(nodeProperty, output[key]);
 		}
 	}
 
-	return Promise.resolve(output);
+	return output as T;
 }
-
-/**
- * Generate default values where no values are not currently set.
- */
-function GenerateDefaultValues(
-	neode: Neode,
-	model: Model,
-	properties: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
-	const output = GenerateDefaultValuesAsync(neode, model, properties);
-
-	return Promise.resolve(output);
-}
-
-GenerateDefaultValues.async = GenerateDefaultValuesAsync;
-
-export default GenerateDefaultValues;

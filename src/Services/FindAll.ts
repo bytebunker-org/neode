@@ -1,7 +1,17 @@
-import Builder, { mode } from "../Query/Builder.js";
+import type { Model } from "../Model.js";
+import type { Neode } from "../Neode.js";
+import type { Node } from "../Node.js";
+import { Builder } from "../Query/Builder.js";
 import { eagerNode } from "../Query/EagerUtils.js";
 
-export function FindAll(neode, model, properties, order, limit, skip) {
+export function FindAll<T extends Record<string, unknown>>(
+	neode: Neode,
+	model: Model<T>,
+	properties: Partial<T>,
+	order: string | Record<string, unknown>,
+	limit,
+	skip,
+): Promise<Node<T>[]> {
 	const alias = "this";
 
 	const builder = new Builder(neode);
@@ -10,10 +20,8 @@ export function FindAll(neode, model, properties, order, limit, skip) {
 	builder.match(alias, model);
 
 	// Where
-	if (properties) {
-		Object.keys(properties).forEach((key) => {
-			builder.where(`${alias}.${key}`, properties[key]);
-		});
+	for (const [key, value] of Object.entries(properties)) {
+		builder.where(`${alias}.${key}`, value);
 	}
 
 	// Order

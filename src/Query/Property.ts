@@ -1,15 +1,20 @@
 export class Property {
-	constructor(property, param, operator = "=") {
-		this._property = property;
-		this._param = `$${param}` || "null";
-		this._operator = operator;
+	private readonly param: string;
+
+	constructor(
+		private readonly property: string,
+		readonly paramName?: string,
+		private readonly operator = "=",
+	) {
+		this.param = paramName ? `$${paramName}` : "null";
+		this.operator = operator;
 	}
 
 	toString() {
-		return `${this._property} ${this._operator} ${this._param}`.trim();
+		return `${this.property} ${this.operator} ${this.param}`.trim();
 	}
 
 	toInlineString() {
-		return `${this._property}: ${this._param}`.trim();
+		return `${this.property}: ${this.param}`.trim();
 	}
 }

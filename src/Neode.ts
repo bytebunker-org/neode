@@ -9,7 +9,8 @@ import { Factory } from "./Factory.js";
 import { Model } from "./Model.js";
 import { ModelMap } from "./ModelMap.js";
 import type { Node } from "./Node.js";
-import { QueryMode } from "./Query/Builder.js";
+import { NodeCollection } from "./NodeCollection.js";
+import { Builder, QueryMode } from "./Query/Builder.js";
 import { Schema } from "./Schema.js";
 import type { Query, QueryParams, SchemaObject } from "./types.js";
 import { QueryError } from "./util/QueryError.js";
@@ -25,9 +26,9 @@ interface NeodeOptions {
 }
 
 export class Neode {
-	public readonly schema: Schema;
-	private readonly driver: Driver;
-	private readonly models: ModelMap;
+	private readonly _schema: Schema;
+	private readonly _driver: Driver;
+	private readonly _models: ModelMap;
 	private factory: Factory;
 	private database?: string;
 	private _enterprise: boolean;
@@ -37,20 +38,28 @@ export class Neode {
 			options.username && options.password
 				? neo4j.auth.basic(options.username, options.password)
 				: undefined;
-		this.driver = neo4j.driver(
+		this._driver = neo4j.driver(
 			options.connection_string,
 			auth,
 			options.driverConfig ?? {},
 		);
 
-		this.models = new ModelMap(this);
-		this.schema = new Schema(this);
+		this._models = new ModelMap(this);
+		this._schema = new Schema(this);
 		this.factory = new Factory(this);
 
 		this.database = options.database;
 
 		this._enterprise = options.enterprise;
 		this.setEnterprise(options.enterprise);
+	}
+
+	public get schema(): Schema {
+		return this._schema;
+	}
+
+	public get driver(): neo4j.Driver {
+		return this._driver;
 	}
 
 	/**
@@ -179,14 +188,17 @@ export class Neode {
 	/**
 	 * Define a new Model
 	 */
-	model<T>(name: string, schema?: SchemaObject): Model<T> {
-		if (schema instanceof Object) {
+	public model<T extends Record<string, unknown>>(
+		name: string,
+		schema?: SchemaObject,
+	): Model<T> {
+		if (schema && typeof schema === "object") {
 			const model = new Model(this, name, schema);
-			this.models.set(name, model);
+			this._models.set(name, model);
 		}
 
-		if (!this.models.has(name)) {
-			const defined = [...this.models.keys()];
+		if (!this._models.has(name)) {
+			const defined = [...this._models.keys()];
 
 			let message = `Couldn't find a definition for "${name}".`;
 
@@ -199,7 +211,11 @@ export class Neode {
 			throw new Error(message);
 		}
 
-		return this.models.get(name)!;
+		return this._models.get(name)! as Model<T>;
+	}
+
+	public get models(): ModelMap {
+		return this._models;
 	}
 
 	/**
@@ -209,50 +225,47 @@ export class Neode {
 	 * @param as New model name
 	 * @param using Schema changes
 	 */
-	extend<T>(name: string, as: string, using: SchemaObject): Model<T> {
-		return this.models.extend(name, as, using);
+	extend<T extends Record<string, unknown>>(
+		name: string,
+		as: string,
+		using: SchemaObject,
+	): Model<T> {
+		return this._models.extend<T>(name, as, using);
 	}
 
 	/**
 	 * Create a new Node of a type
-	 *
-	 * @param  {String} model
-	 * @param  {Object} properties
-	 * @return {Node}
 	 */
-	public create<T>(
+	public create<T extends Record<string, unknown>>(
 		model: string,
-		properties: Record<string, unknown>,
-	): Node<T> {
-		if (!this.models.has(model)) {
-			throw new Error(`Couldn't find a definition for "${model}".`);
-		}
-
-		return this.models.get(model)!.create(properties);
+		properties: T,
+	): Promise<Node<T>> {
+		return this.model<T>(model).create(properties);
 	}
 
 	/**
 	 * Merge a node based on the defined indexes
 	 */
-	public merge<T>(
+	public merge<T extends Record<string, unknown>>(
 		model: string,
 		properties: Record<string, unknown>,
 	): Promise<Node<T>> {
-		return this.model(model).merge(properties);
+		return this.model<T>(model).merge(properties);
 	}
 
 	/**
 	 * Merge a node based on the supplied properties
 	 *
+	 * @param model
 	 * @param match Specific properties to merge on
 	 * @param set   Properties to set
 	 */
-	public mergeOn<T>(
+	public mergeOn<T extends Record<string, unknown>>(
 		model: string,
 		match: Record<string, unknown>,
 		set: Record<string, unknown>,
 	): Promise<Node<T>> {
-		return this.model<T>(model).mergeOn(match, set);
+		return this.model<T>(model).mergeOn<T>(match, set);
 	}
 
 	/**
@@ -269,21 +282,26 @@ export class Neode {
 	 * Delete all node labels
 	 */
 	public deleteAll(label: string | string[]) {
-		return this.models.getByLabels(label)?.deleteAll();
+		return this._models.getByLabels(label)?.deleteAll();
 	}
 
 	/**
 	 * Relate two nodes based on the type
 	 *
-	 * @param  {Node}   from        Origin node
-	 * @param  {Node}   to          Target node
-	 * @param  {String} type        Type of Relationship definition
-	 * @param  {Object} properties  Properties to set against the relationships
-	 * @param  {Boolean} force_create   Force the creation a new relationship? If false, the relationship will be merged
-	 * @return {Promise}
+	 * @param from Origin node
+	 * @param to Target node
+	 * @param type Type of Relationship definition
+	 * @param properties Properties to set against the relationships
+	 * @param forceCreate Force the creation a new relationship? If false, the relationship will be merged
 	 */
-	relate(from, to, type, properties, force_create = false) {
-		return from.relateTo(to, type, properties, force_create);
+	relate<T, U>(
+		from: Node<T>,
+		to: Node<U>,
+		type: string,
+		properties: Record<string, unknown>,
+		forceCreate = false,
+	) {
+		return from.relateTo(to, type, properties, forceCreate);
 	}
 
 	/**
@@ -340,8 +358,8 @@ export class Neode {
 	/**
 	 * Create an explicit Read Session
 	 */
-	readSession(database = this.database): Session {
-		return this.driver.session({
+	public readSession(database = this.database): Session {
+		return this._driver.session({
 			database,
 			defaultAccessMode: neo4j.session.READ,
 		});
@@ -350,8 +368,8 @@ export class Neode {
 	/**
 	 * Create an explicit Write Session
 	 */
-	writeSession(database = this.database): Session {
-		return this.driver.session({
+	public writeSession(database = this.database): Session {
+		return this._driver.session({
 			database,
 			defaultAccessMode: neo4j.session.WRITE,
 		});
@@ -369,7 +387,7 @@ export class Neode {
 			database = this.database,
 		}: { mode?: QueryMode; database?: string } = {},
 	): Promise<T> {
-		const session = this.driver.session({
+		const session = this._driver.session({
 			database,
 			defaultAccessMode:
 				mode === QueryMode.WRITE
@@ -411,100 +429,106 @@ export class Neode {
 
 	/**
 	 * Close Driver
-	 *
-	 * @return {void}
 	 */
-	close() {
-		this.driver.close();
+	public close(): Promise<void> {
+		return this._driver.close();
 	}
 
 	/**
 	 * Return a new Query Builder
-	 *
-	 * @return {Builder}
 	 */
-	query() {
+	public query(): Builder {
 		return new Builder(this);
 	}
 
 	/**
-	 * Get a collection of nodes`
-	 *
-	 * @param  {String}              label
-	 * @param  {Object}              properties
-	 * @param  {String|Array|Object} order
-	 * @param  {Int}                 limit
-	 * @param  {Int}                 skip
-	 * @return {Promise}
+	 * Get a collection of nodes
 	 */
-	all(label, properties, order, limit, skip) {
-		return this.models.get(label).all(properties, order, limit, skip);
+	public all(
+		label: string,
+		properties?: Record<string, unknown>,
+		order?: string[] | unknown[] | Record<string, unknown>,
+		limit?: number,
+		skip?: number,
+	) {
+		return this.model(label).all(properties, order, limit, skip);
 	}
 
 	/**
-	 * Find a Node by it's label and primary key
+	 * Find a Node by its label and primary key
 	 *
-	 * @param  {String} label
-	 * @param  {mixed}  id
-	 * @return {Promise}
+	 * @param label
+	 * @param id
 	 */
-	find(label, id) {
-		return this.models.get(label).find(id);
+	public find<T extends Record<string, unknown>>(
+		label: string,
+		id: string | number,
+	): Promise<Node<T>> {
+		return this.model<T>(label).find(id);
 	}
 
 	/**
-	 * Find a Node by it's internal node ID
+	 * Find a Node by its internal node ID
 	 *
-	 * @param  {String} model
-	 * @param  {int}    id
-	 * @return {Promise}
+	 * @param label
+	 * @param id
 	 */
-	findById(label, id) {
-		return this.models.get(label).findById(id);
+	public findById<T extends Record<string, unknown>>(
+		label: string,
+		id: number,
+	) {
+		return this.model(label).findById(id);
 	}
 
 	/**
 	 * Find a Node by properties
 	 *
-	 * @param  {String} label
-	 * @param  {mixed}  key     Either a string for the property name or an object of values
-	 * @param  {mixed}  value   Value
-	 * @return {Promise}
+	 * @param label
+	 * @param key Either a string for the property name or an object of values
+	 * @param value Value
 	 */
-	first(label, key, value) {
-		return this.models.get(label).first(key, value);
+	public first<T extends Record<string, unknown>>(
+		label: string,
+		key: string | Partial<T>,
+		value: unknown,
+	) {
+		return this.model<T>(label).first(key, value);
 	}
 
 	/**
 	 * Hydrate a set of nodes and return a Collection
 	 *
-	 * @param  {Object}          res            Neo4j result set
-	 * @param  {String}          alias          Alias of node to pluck
-	 * @param  {Definition|null} definition     Force Definition
-	 * @return {Collection}
+	 * @param result Neo4j result set
+	 * @param alias Alias of node to pluck
+	 * @param definition Force Definition
 	 */
-	hydrate(res, alias, definition) {
-		return this.factory.hydrate(res, alias, definition);
+	public hydrate<T extends Record<string, unknown>>(
+		result: QueryResult,
+		alias: string,
+		definition?: Model<T>,
+	): NodeCollection<T> {
+		return this.factory.hydrate(result, alias, definition);
 	}
 
 	/**
 	 * Hydrate the first record in a result set
 	 *
-	 * @param res    Neo4j Result
+	 * @param result    Neo4j Result
 	 * @param alias  Alias of Node to pluck
 	 */
-	hydrateFirst(res: QueryResult, alias: string, definition) {
-		return this.factory.hydrateFirst(res, alias, definition);
+	hydrateFirst(result: QueryResult, alias: string, definition) {
+		return this.factory.hydrateFirst(result, alias, definition);
 	}
 
 	/**
 	 * Turn an array into a Collection
 	 *
-	 * @param  {Array} array An array
-	 * @return {Collection}
+	 * @param array An array
 	 */
-	toCollection(array) {
-		return new Collection(this, array);
+	public toCollection<T extends Record<string, unknown>>(
+		array: Node<T>[],
+	): NodeCollection<T> {
+		return new NodeCollection(this, array);
 	}
 }
 

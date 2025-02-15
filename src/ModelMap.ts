@@ -2,7 +2,7 @@ import { Model } from "./Model.js";
 import type { Neode } from "./Neode.js";
 import type { SchemaObject } from "./types.js";
 
-export class ModelMap extends Map<string, Model<unknown>> {
+export class ModelMap extends Map<string, Model<Record<string, unknown>>> {
 	private readonly _neode: Neode;
 
 	constructor(neode: Neode) {
@@ -14,23 +14,27 @@ export class ModelMap extends Map<string, Model<unknown>> {
 	/**
 	 * Get the definition for an array labels
 	 */
-	public getByLabels(label: string): Model<unknown> | undefined;
-	public getByLabels(labels: string[]): Model<unknown> | undefined;
-	public getByLabels(
+	public getByLabels<T extends Record<string, unknown>>(
+		label: string,
+	): Model<T> | undefined;
+	public getByLabels<T extends Record<string, unknown>>(
+		labels: string[],
+	): Model<T> | undefined;
+	public getByLabels<T extends Record<string, unknown>>(
 		labelOrArray: string | string[],
-	): Model<unknown> | undefined;
-	public getByLabels(
+	): Model<T> | undefined;
+	public getByLabels<T extends Record<string, unknown>>(
 		labelOrArray: string | string[],
-	): Model<unknown> | undefined {
+	): Model<T> | undefined {
 		const labels = Array.isArray(labelOrArray)
 			? labelOrArray
 			: [labelOrArray];
 
 		for (const definition of this.values()) {
 			if (
-				definition.labels().sort().join(":") === labels.sort().join(":")
+				definition.labels.sort().join(":") === labels.sort().join(":")
 			) {
-				return definition;
+				return definition as Model<T>;
 			}
 		}
 
@@ -45,7 +49,11 @@ export class ModelMap extends Map<string, Model<unknown>> {
 	 * @param  {Object} using  Schema changes
 	 * @return {Model}
 	 */
-	extend<T>(name: string, as: string, using: SchemaObject): Model<T> {
+	extend<T extends Record<string, unknown>>(
+		name: string,
+		as: string,
+		using: SchemaObject,
+	): Model<T> {
 		// Get Original Model
 		const original = this.get(name);
 
@@ -54,7 +62,7 @@ export class ModelMap extends Map<string, Model<unknown>> {
 		}
 
 		// Add new Labels
-		const labels = original.labels().slice(0);
+		const labels = original.labels.slice(0);
 		labels.push(as);
 		labels.sort();
 
@@ -68,6 +76,6 @@ export class ModelMap extends Map<string, Model<unknown>> {
 
 		this.set(as, model);
 
-		return model;
+		return model as Model<T>;
 	}
 }

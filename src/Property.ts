@@ -1,20 +1,9 @@
 import type {
+	GenericPropertyTypes,
 	NodeProperty,
 	NodePropertyObject,
 	PropertyTypes,
-	SchemaObject,
 } from "./types.js";
-
-/*
-
-	primary?: boolean;
-	required?: boolean;
-	unique?: boolean;
-	indexed?: boolean;
-	hidden?: boolean;
-	readonly?: boolean;
-	default?: unknown;
- */
 
 /**
  *  Container holding information for a property.
@@ -37,9 +26,11 @@ export class Property {
 	private readonly _protected?: boolean;
 
 	constructor(name: string, schemaOrString: NodeProperty) {
-		const schema: NodeProperty =
+		const schema: NodePropertyObject =
 			typeof schemaOrString === "string"
-				? ({ type: schemaOrString } satisfies NodeProperty)
+				? ({
+						type: schemaOrString as GenericPropertyTypes,
+					} satisfies NodePropertyObject)
 				: schemaOrString;
 
 		this._name = name;
@@ -54,7 +45,7 @@ export class Property {
 		this._default = schema.default;
 	}
 
-	public get name() {
+	public get name(): string {
 		return this._name;
 	}
 
@@ -62,39 +53,39 @@ export class Property {
 		return this._schema.type;
 	}
 
-	public get primary() {
+	public get primary(): boolean {
 		return this._primary ?? false;
 	}
 
-	public get unique() {
+	public get unique(): boolean {
 		return this._unique ?? false;
 	}
 
-	public get exists() {
+	public get exists(): boolean {
 		return this._exists ?? false;
 	}
 
-	public get required() {
+	public get required(): boolean {
 		return this._exists ?? this._required ?? false;
 	}
 
-	public get indexed() {
+	public get indexed(): boolean {
 		return this._indexed ?? false;
 	}
 
-	public get protected() {
-		return this._primary ?? this._protected;
+	public get protected(): boolean {
+		return this._primary ?? this._protected ?? false;
 	}
 
-	public get hidden() {
-		return this._hidden;
+	public get hidden(): boolean {
+		return this._hidden ?? false;
 	}
 
-	public get readonly() {
+	public get readonly(): boolean {
 		return this._readonly ?? false;
 	}
 
-	convertToInteger() {
+	public get shouldConvertToInteger(): boolean {
 		return this.type === "int" || this.type === "integer";
 	}
 }

@@ -1,15 +1,15 @@
 export class Return {
-	constructor(alias, as) {
-		// TODO: Does alias carry an 'as' value?
-		this._alias = alias;
-		this._as = as;
-	}
+	// TODO: Does alias carry an 'as' value?
+	constructor(
+		private readonly alias: string,
+		private readonly as: string,
+	) {}
 
 	toString() {
-		let output = this._alias;
+		let output = this.alias;
 
-		if (this._as) {
-			output += " AS " + this._as;
+		if (this.as) {
+			output += ` AS ${this.as}`;
 		}
 
 		return output;

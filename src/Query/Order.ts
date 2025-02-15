@@ -1,10 +1,10 @@
 export class Order {
-	constructor(what, how) {
-		this._what = what;
-		this._how = how || "";
-	}
+	constructor(
+		private readonly what: string,
+		private readonly how: string = "",
+	) {}
 
 	toString() {
-		return `${this._what} ${this._how}`.trim();
+		return `${this.what} ${this.how}`.trim();
 	}
 }

@@ -1,20 +1,21 @@
-export const OPERATOR_EQUALS = "=";
-
 export class Where {
-	constructor(left, operator, right) {
-		this._left = left;
-		this._operator = operator;
-		this._right = right;
-		this._negative = false;
-	}
+	private negative = false;
 
-	setNegative() {
-		this._negative = true;
+	constructor(
+		private readonly left: string,
+		private readonly operator: string,
+		private readonly right: string,
+	) {}
+
+	setNegative(): this {
+		this.negative = true;
+
+		return this;
 	}
 
 	toString() {
-		const negative = this._negative ? "NOT " : "";
+		const negative = this.negative ? "NOT " : "";
 
-		return `${negative}${this._left} ${this._operator} ${this._right}`;
+		return `${negative}${this.left} ${this.operator} ${this.right}`;
 	}
 }

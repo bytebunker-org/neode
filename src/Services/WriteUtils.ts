@@ -2,7 +2,7 @@ import { valueToCypher } from "../Entity.js";
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
 import type { Builder } from "../Query/Builder.js";
-import GenerateDefaultValues from "./GenerateDefaultValues.js";
+import {GenerateDefaultValues} from "./GenerateDefaultValues.js";
 
 export const MAX_CREATE_DEPTH = 99;
 export const ORIGINAL_ALIAS = "this";
@@ -28,7 +28,7 @@ function splitProperties<P extends Record<string, unknown>>(
 	const on_match: Record<string, unknown> = {};
 
 	// Calculate Set Properties
-	for (const property of model.properties()) {
+	for (const property of model.properties) {
 		const name = property.name();
 
 		// Skip if not set
@@ -72,12 +72,12 @@ function splitProperties<P extends Record<string, unknown>>(
  * @param mode 'create' or 'merge'
  * @param merge_on Which properties should we merge on?
  */
-export function addNodeToStatement(
+export function addNodeToStatement<T extends Record<string, unknown>>(
 	neode: Neode,
 	builder: Builder,
 	alias: string,
-	model: Model<unknown>,
-	properties: Record<string, unknown>,
+	model: Model<T>,
+	properties: T,
 	aliases: string[] = [],
 	mode: "create" | "merge" = "create",
 	merge_on: string[] = [],
@@ -360,7 +360,7 @@ export function addNodeRelationshipToStatement(
 			);
 		}
 
-		value = GenerateDefaultValues.async(neode, model, value);
+		value = GenerateDefaultValues(neode, model, value);
 
 		addNodeToStatement(
 			neode,

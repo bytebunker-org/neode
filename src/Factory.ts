@@ -1,11 +1,22 @@
 import neo4j, { type QueryResult } from "neo4j-driver";
-
-import type { Mode } from "../types/index.js";
-import { Collection } from "./Collection.js";
 import type { Model } from "./Model.js";
 import type { Neode } from "./Neode.js";
 import { Node } from "./Node.js";
+import { NodeCollection } from "./NodeCollection.js";
 import { EAGER_ID, EAGER_LABELS, EAGER_TYPE } from "./Query/EagerUtils.js";
+import { Relationship } from "./Relationship.js";
+import { RelationshipCollection } from "./RelationshipCollection.js";
+import {
+	RelationshipDirectionEnum,
+	type RelationshipType,
+} from "./RelationshipType.js";
+import type { EntityPropertyMap } from "./types.js";
+import { hasOwn } from "./util/util.js";
+
+interface HydratedDataRecord extends Record<string, unknown> {
+	[EAGER_ID]: neo4j.Integer;
+	[EAGER_LABELS]?: string[];
+}
 
 export class Factory {
 	constructor(private readonly neode: Neode) {}
@@ -13,77 +24,98 @@ export class Factory {
 	/**
 	 * Hydrate the first record in a result set
 	 *
-	 * @param  {Object} res    Neo4j Result
-	 * @param  {String} alias  Alias of Node to pluck
-	 * @return {Node}
+	 * @param result Neo4j Result
+	 * @param alias Alias of Node to pluck
+	 * @param definition
 	 */
-	hydrateFirst(res, alias, definition) {
-		if (!res || !res.records.length) {
-			return false;
+	hydrateFirst<T extends Record<string, unknown>>(
+		result: QueryResult | undefined,
+		alias: string,
+		definition?: Model<T>,
+	): Node<T> | undefined {
+		const firstResult: Record<string, unknown> | undefined =
+			result?.records?.[0]?.get(alias);
+
+		if (!firstResult) {
+			return;
 		}
 
-		return this.hydrateNode(res.records[0].get(alias), definition);
+		return this.hydrateNode(firstResult, definition);
 	}
 
 	/**
 	 * Hydrate a set of nodes and return a Collection
 	 *
-	 * @param  {Object}          res            Neo4j result set
-	 * @param  {String}          alias          Alias of node to pluck
-	 * @param  {Definition|null} definition     Force Definition
-	 * @return {Collection}
+	 * @param result Neo4j result set
+	 * @param alias Alias of node to pluck
+	 * @param definition Force Definition
 	 */
+	public hydrate<T extends Record<string, unknown>>(
+		result: QueryResult | undefined,
+		alias: string,
+		definition?: Model<T>,
+	): NodeCollection<T> {
+		let nodes: Node<T>[] = [];
 
-	hydrate(res: QueryResult, alias: string, definition) {
-		if (!res) {
-			return false;
+		if (result?.records?.length) {
+			nodes = result.records.map((row) =>
+				this.hydrateNode(row.get(alias), definition),
+			);
 		}
 
-		const nodes = res.records.map((row) =>
-			this.hydrateNode(row.get(alias), definition),
-		);
-
-		return new Collection(nodes);
+		return new NodeCollection(this.neode, nodes);
 	}
 
 	/**
 	 * Get the definition by a set of labels
 	 *
-	 * @param  {Array} labels
-	 * @return {Model}
+	 * @param labels
 	 */
-	getDefinition(labels) {
+	private getDefinition<T extends Record<string, unknown>>(
+		labels: string[],
+	): Model<T> | undefined {
 		return this.neode.models.getByLabels(labels);
 	}
 
 	/**
 	 * Take a result object and convert it into a Model
-	 *
-	 * @param {Object}              record
-	 * @param {Model|String|null}   definition
 	 */
-	hydrateNode<T>(
+	private hydrateNode<T extends Record<string, unknown>>(
 		record: Record<string, unknown>,
-		definitionOrString: Model<T> | string | undefined,
+		definitionOrString?: Model<T> | string,
 	): Node<T> {
-		// Is there no better way to check this?!
-		if (neo4j.isInt(record.identity) && Array.isArray(record.labels)) {
-			record = Object.assign({}, record.properties, {
-				[EAGER_ID]: record.identity,
-				[EAGER_LABELS]: record.labels,
-			});
+		if (!hasOwn(record, "identity") || !neo4j.isInt(record.identity)) {
+			throw new Error(
+				`No node identity found in record ${JSON.stringify(record)}`,
+			);
+		}
+
+		const identity = record.identity as neo4j.Integer;
+
+		let hydratedData: HydratedDataRecord = {
+			...(record["properties"] && typeof record["properties"] === "object"
+				? record["properties"]
+				: {}),
+			[EAGER_ID]: identity,
+		};
+
+		// TODO: Are labels also required?
+		if (hasOwn(record, "labels") && Array.isArray(record.labels)) {
+			hydratedData = {
+				...hydratedData,
+				[EAGER_LABELS]: record.labels as string[],
+			};
 		}
 
 		// Get Internals
-		const identity = record[EAGER_ID];
-		const labels = record[EAGER_LABELS];
+		const labels = hydratedData[EAGER_LABELS];
 
-		let definition: Model<T>;
+		let definition: Model<T> | undefined;
 
-		if (!definitionOrString) {
+		if (!definitionOrString && labels) {
 			definition = this.getDefinition(labels);
 		} else if (typeof definitionOrString === "string") {
-			definition = this.neode.models.get(definition);
+			definition = this.neode.models.get(definitionOrString) as Model<T>;
 		} else {
 			definition = definitionOrString;
 		}
@@ -96,66 +128,65 @@ export class Factory {
 		}
 
 		// Get Properties
-		const properties = new Map();
+		const properties = new Map() as EntityPropertyMap<T>;
 
-		definition.properties().forEach((value, key) => {
-			if (record.hasOwnProperty(key)) {
-				properties.set(key, record[key]);
+		for (const key of definition.properties.keys()) {
+			if (hasOwn(hydratedData, key)) {
+				properties.set(key, hydratedData[key]);
 			}
-		});
+		}
 
 		// Create Node Instance
 		const node = new Node<T>(
 			this.neode,
 			definition,
 			identity,
-			labels,
+			labels ?? [],
 			properties,
 		);
 
 		// Add eagerly loaded props
 		for (const eager of definition.eager) {
-			const name = eager.name();
+			const name = eager.name;
 
+			// TODO: Are the eagerly loaded props on hydratedData (so in record.properties) or actually in record?
 			if (!record[name]) {
-				return;
+				throw new Error(
+					`Could not find eager property ${name} on ${JSON.stringify(record)}`,
+				);
 			}
 
-			switch (eager.type()) {
-				case "node":
-					node.setEager(name, this.hydrateNode(record[name]));
-					break;
-
-				case "nodes":
-					node.setEager(
-						name,
-						new Collection(
-							this.neode,
-							record[name].map((value) =>
-								this.hydrateNode(value),
-							),
+			if (eager.type === "node") {
+				node.setEager(
+					name,
+					this.hydrateNode(record[name] as Record<string, unknown>),
+				);
+			} else if (eager.type === "nodes") {
+				node.setEager(
+					name,
+					new NodeCollection(
+						this.neode,
+						(record[name] as Record<string, unknown>[]).map(
+							(value) => this.hydrateNode(value),
 						),
-					);
-					break;
-
-				case "relationship":
-					node.setEager(
-						name,
-						this.hydrateRelationship(eager, record[name], node),
-					);
-					break;
-
-				case "relationships":
-					node.setEager(
-						name,
-						new Collection(
-							this.neode,
-							record[name].map((value) =>
+					),
+				);
+			} else if (eager.type === "relationship") {
+				node.setEager(
+					name,
+					this.hydrateRelationship(eager, record[name], node),
+				);
+			} else if (eager.type === "relationships") {
+				node.setEager(
+					name,
+					new RelationshipCollection(
+						this.neode,
+						(record[name] as Record<string, unknown>[]).map(
+							(value) =>
 								this.hydrateRelationship(eager, value, node),
-							),
 						),
-					);
-					break;
+					),
+				);
 			}
 		}
 
@@ -165,12 +196,20 @@ export class Factory {
 	/**
 	 * Take a result object and convert it into a Relationship
 	 *
-	 * @param  {RelationshipType}  definition  Relationship type
-	 * @param  {Object}            record      Record object
-	 * @param  {Node}              this_node   'This' node in the current  context
+	 * @param definition  Relationship type
+	 * @param record      Record object
+	 * @param thisNode   'This' node in the current  context
 	 * @return {Relationship}
 	 */
-	hydrateRelationship(definition, record, this_node) {
+	public hydrateRelationship<
+		T extends Record<string, unknown>,
+		S extends Record<string, unknown>,
+		E extends Record<string, unknown>,
+	>(
+		definition: RelationshipType<T>,
+		record: HydratedDataRecord,
+		thisNode: Node<S | E>,
+	): Relationship<T, S, E> {
 		// Get Internals
 		const identity = record[EAGER_ID];
 		const type = record[EAGER_TYPE];
@@ -181,21 +220,27 @@ export class Factory {
 		// Get Properties
 		const properties = new Map();
 
-		definition.properties().forEach((value, key) => {
-			if (record.hasOwnProperty(key)) {
+		for (const [key] of definition.properties.entries()) {
+			if (hasOwn(record, key)) {
 				properties.set(key, record[key]);
 			}
-		});
+		}
 
 		// Start & End Nodes
-		const other_node = this.hydrateNode(record[definition.nodeAlias()]);
+		const otherNode = this.hydrateNode(
+			record[definition.nodeAlias] as Record<string, unknown>,
+		);
 
 		// Calculate Start & End Nodes
-		const start_node =
-			definition.direction() == DIRECTION_IN ? other_node : this_node;
+		const startNode =
+			definition.direction === RelationshipDirectionEnum.IN
+				? otherNode
+				: thisNode;
 
-		const end_node =
-			definition.direction() == DIRECTION_IN ? this_node : other_node;
+		const endNode =
+			definition.direction === RelationshipDirectionEnum.IN
+				? thisNode
+				: otherNode;
 
 		return new Relationship(
 			this.neode,
@@ -203,8 +248,8 @@ export class Factory {
 			identity,
 			type,
 			properties,
-			start_node,
-			end_node,
+			startNode,
+			endNode,
 		);
 	}
 }

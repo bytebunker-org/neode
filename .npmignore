@@ -9,4 +9,4 @@ coverage/*
 .gitignore
 gulpfile.js
 .travis.yml
-TODO.md
+TODO.md/.eslintrc

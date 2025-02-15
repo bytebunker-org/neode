@@ -1,12 +1,17 @@
 import type { Neode } from "./Neode.js";
 import { Property } from "./Property.js";
 import { Queryable } from "./Queryable.js";
-import { DIRECTION_BOTH, type RelationshipType } from "./RelationshipType.js";
+import {
+	type RelationshipCascadePolicyEnum,
+	RelationshipDirectionEnum,
+	RelationshipType,
+} from "./RelationshipType.js";
 import type {
-	BaseRelationshipNodeProperties,
 	NodeProperty,
+	NodesPropertyTypes,
 	PropertyTypes,
 	RelationshipLikePropertyObject,
+	RelationshipPropertyTypes,
 	SchemaObject,
 } from "./types.js";
 
@@ -17,14 +22,17 @@ const RELATIONSHIP_TYPES: PropertyTypes[] = [
 	"nodes",
 ];
 
-export class Model<T> extends Queryable<T> {
+export class Model<T extends Record<string, unknown>> extends Queryable<T> {
 	private readonly _name: string;
 	private readonly _schema: SchemaObject;
 
 	private readonly _properties: Map<string, Property>;
-	private readonly _relationships: Map<string, RelationshipType>;
-	private readonly _labels: string[];
-	private readonly _primary_key: string;
+	private readonly _relationships: Map<
+		string,
+		RelationshipType<Record<string, unknown>>
+	>;
+	private _labels: string[];
+	private _primary_key: string;
 	private readonly _unique: string[];
 	private readonly _indexed: string[];
 	private readonly _hidden: string[];
@@ -32,6 +40,8 @@ export class Model<T> extends Queryable<T> {
 
 	constructor(neode: Neode, name: string, schema: SchemaObject) {
 		super(neode);
+
+		this.setModel(this);
 
 		this._name = name;
 		this._schema = schema;
@@ -97,10 +107,8 @@ export class Model<T> extends Queryable<T> {
 
 	/**
 	 * Get Schema
-	 *
-	 * @return {Object}
 	 */
-	public get schema() {
+	public get schema(): SchemaObject {
 		return this._schema;
 	}
 
@@ -113,20 +121,15 @@ export class Model<T> extends Queryable<T> {
 
 	/**
 	 * Get Model name
-	 *
-	 * @return {String}
 	 */
-	name() {
+	public get name(): string {
 		return this._name;
 	}
 
 	/**
 	 * Set Labels
-	 *
-	 * @param  {...String} labels
-	 * @return {Model}
 	 */
-	setLabels(...labels) {
+	setLabels(...labels: string[]): this {
 		this._labels = labels.sort();
 
 		return this;
@@ -134,10 +137,8 @@ export class Model<T> extends Queryable<T> {
 
 	/**
 	 * Get Labels
-	 *
-	 * @return {Array}
 	 */
-	labels() {
+	public get labels(): string[] {
 		return this._labels;
 	}
 
@@ -147,33 +148,33 @@ export class Model<T> extends Queryable<T> {
 	 * @param key Property name
 	 * @param schema Schema object
 	 */
-	addProperty(key: string, schema: SchemaObject | PropertyTypes): this {
+	addProperty(key: string, schema: NodeProperty): this {
 		const property = new Property(key, schema);
 
 		this._properties.set(key, property);
 
 		// Is this key the primary key?
-		if (property.primary()) {
+		if (property.primary) {
 			this._primary_key = key;
 		}
 
 		// Is this property unique?
-		if (property.unique() || property.primary()) {
+		if (property.unique || property.primary) {
 			this._unique.push(key);
 		}
 
 		// Is this property indexed?
-		if (property.indexed()) {
+		if (property.indexed) {
 			this._indexed.push(key);
 		}
 
 		// Should this property be hidden during JSON conversion?
-		if (property.hidden()) {
+		if (property.hidden) {
 			this._hidden.push(key);
 		}
 
 		// Is this property only to be read and never written to DB (e.g. auto-generated UUIDs)?
-		if (property.readonly()) {
+		if (property.readonly) {
 			this._readonly.push(key);
 		}
 
@@ -183,27 +184,27 @@ export class Model<T> extends Queryable<T> {
 	/**
 	 * Add a new relationship
 	 *
-	 * @param  {String} name                The name given to the relationship
-	 * @param  {String} type                Type of Relationship
-	 * @param  {String} direction           Direction of Node (Use constants DIRECTION_IN, DIRECTION_OUT, DIRECTION_BOTH)
-	 * @param  {String|Model|null} target   Target type definition for the
-	 * @param  {Object} schema              Property Schema
-	 * @param  {Bool} eager                 Should this relationship be eager loaded?
-	 * @param  {Bool|String} cascade        Cascade delete policy for this relationship
-	 * @param  {String} node_alias          Alias to give to the node in the pattern comprehension
-	 * @return {Relationship}
+	 * @param name The name given to the relationship
+	 * @param type Type of Relationship
+	 * @param relationship
+	 * @param direction Direction of Node (Use constants DIRECTION_IN, DIRECTION_OUT, DIRECTION_BOTH)
+	 * @param target Target type definition for the
+	 * @param schema Property Schema
+	 * @param eager Should this relationship be eager loaded?
+	 * @param cascade Cascade delete policy for this relationship
+	 * @param nodeAlias Alias to give to the node in the pattern comprehension
 	 */
-	relationship(
-		name,
-		type,
-		relationship,
-		direction = DIRECTION_BOTH,
-		target,
-		schema = {},
+	public relationship<T extends Record<string, unknown>>(
+		name: string,
+		type: NodesPropertyTypes | RelationshipPropertyTypes,
+		relationship: string,
+		direction = RelationshipDirectionEnum.BOTH,
+		target?: string | Model<T>,
+		schema: SchemaObject = {},
 		eager = false,
-		cascade = false,
-		node_alias = "node",
-	) {
+		cascade: boolean | RelationshipCascadePolicyEnum = false,
+		nodeAlias = "node",
+	): RelationshipType<Record<string, unknown>> | undefined {
 		if (relationship && direction && schema) {
 			this._relationships.set(
 				name,
@@ -216,7 +217,7 @@ export class Model<T> extends Queryable<T> {
 					schema,
 					eager,
 					cascade,
-					node_alias,
+					nodeAlias,
 				),
 			);
 		}
@@ -226,33 +227,27 @@ export class Model<T> extends Queryable<T> {
 
 	/**
 	 * Get all defined Relationships  for this Model
-	 *
-	 * @return {Map}
 	 */
-	relationships() {
+	public get relationships(): Map<
+		string,
+		RelationshipType<Record<string, unknown>>
+	> {
 		return this._relationships;
 	}
 
 	/**
 	 * Get relationships defined as Eager relationships
-	 *
-	 * @return {Array}
 	 */
-	eager() {
-		return Array.from(this._relationships)
-			.map(([key, value]) => {
-				// eslint-disable-line  no-unused-vars
-				return value._eager ? value : null;
-			})
-			.filter((a) => !!a);
+	public get eager(): RelationshipType<Record<string, unknown>>[] {
+		return Array.from(this._relationships.values()).filter(
+			(relationship) => relationship.eager,
+		);
 	}
 
 	/**
 	 * Get the name of the primary key
-	 *
-	 * @return {String}
 	 */
-	primaryKey() {
+	public get primaryKey(): string {
 		return this._primary_key;
 	}
 
@@ -261,25 +256,21 @@ export class Model<T> extends Queryable<T> {
 	 *
 	 * @return {String[]}
 	 */
-	hidden() {
+	public get hidden(): string[] {
 		return this._hidden;
 	}
 
 	/**
 	 * Get array of indexed fields
-	 *
-	 * @return {String[]}
 	 */
-	indexes() {
+	public get indexes(): string[] {
 		return this._indexed;
 	}
 
 	/**
 	 * Get defined merge fields
-	 *
-	 * @return {Array}
 	 */
-	mergeFields() {
+	public get mergeFields(): string[] {
 		return this._unique.concat(this._indexed);
 	}
 }

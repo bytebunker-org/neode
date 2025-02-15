@@ -8,12 +8,12 @@ importers:
 
   .:
     dependencies:
-      '@hapi/joi':
-        specifier: ^15.1.1
-        version: 15.1.1
       dotenv:
         specifier: ^16.4.7
         version: 16.4.7
+      joi:
+        specifier: ^17.13.3
+        version: 17.13.3
       neo4j-driver:
         specifier: ^4.2.2
         version: 4.4.11
@@ -625,25 +625,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@hapi/address@2.1.4':
-    resolution: {integrity: sha512-QD1PhQk+s31P1ixsX0H0Suoupp3VMXzIVMSwobR3F3MSUO2YCV0B7xqLcUw/Bh8yuvd3LhpyqLQWTNcRmp6IdQ==}
-    deprecated: Moved to 'npm install @sideway/address'
+  '@hapi/hoek@9.3.0':
+    resolution: {integrity: sha512-/c6rf4UJlmHlC9b5BaNvzAcFv7HZ2QHaV0D4/HNlBdvFnvQq8RI4kYdhyPCl7Xj+oWvTWQ8ujhqS53LIgAe6KQ==}
 
-  '@hapi/bourne@1.3.2':
-    resolution: {integrity: sha512-1dVNHT76Uu5N3eJNTYcvxee+jzX4Z9lfciqRRHCU27ihbUcYi+iSc2iml5Ke1LXe1SyJCLA0+14Jh4tXJgOppA==}
-    deprecated: This version has been deprecated and is no longer supported or maintained
-
-  '@hapi/hoek@8.5.1':
-    resolution: {integrity: sha512-yN7kbciD87WzLGc5539Tn0sApjyiGHAJgKvG9W8C7O+6c7qmoQMfVs0W4bX17eqz6C78QJqqFrtgdK5EWf6Qow==}
-    deprecated: This version has been deprecated and is no longer supported or maintained
-
-  '@hapi/joi@15.1.1':
-    resolution: {integrity: sha512-entf8ZMOK8sc+8YfeOlM8pCfg3b5+WZIKBfUaaJT8UsjAAPjartzxIYm3TIbjvA4u+u++KbcXD38k682nVHDAQ==}
-    deprecated: Switch to 'npm install joi'
-
-  '@hapi/topo@3.1.6':
-    resolution: {integrity: sha512-tAag0jEcjwH+P2quUfipd7liWCNX2F8NvYjQp2wtInsZxnMlypdw0FtAOLxtvvkO+GSRRbmNi8m/5y42PQJYCQ==}
-    deprecated: This version has been deprecated and is no longer supported or maintained
+  '@hapi/topo@5.1.0':
+    resolution: {integrity: sha512-foQZKJig7Ob0BMAYBfcJk8d77QtOe7Wo4ox7ff1lQYoNNAb6jwcY1ncdoy2e9wQZzvNy7ODZCYJkK8kzmcAnAg==}
 
   '@jridgewell/gen-mapping@0.3.8':
     resolution: {integrity: sha512-imAbBGkb+ebQyxKgzv5Hu2nmROxoDOXHh80evxdoXNOrvAnVx7zimzc1Oo5h9RlfV4vPXaE2iM5pOFbvOCClWA==}
@@ -665,6 +651,15 @@ packages:
 
   '@nicolo-ribaudo/chokidar-2@2.1.8-no-fsevents.3':
     resolution: {integrity: sha512-s88O1aVtXftvp5bCPB7WnmXc5IwOZZ7YPuwNPt+GtOOXpPvad1LfbmjYv+qII7zP6RU2QGnqve27dnLycEnyEQ==}
+
+  '@sideway/address@4.1.5':
+    resolution: {integrity: sha512-IqO/DUQHUkPeixNQ8n0JA6102hT9CmaljNTPmQ1u8MEhBo/R4Q8eKLN/vGZxuebwOroDB4cbpjheD4+/sKFK4Q==}
+
+  '@sideway/formula@3.0.1':
+    resolution: {integrity: sha512-/poHZJJVjx3L+zVD6g9KgHfYnb443oi7wLu/XKojDviHy6HOEOA6z1Trk5aR1dGcmPenJEgb2sK2I80LeS3MIg==}
+
+  '@sideway/pinpoint@2.0.0':
+    resolution: {integrity: sha512-RNiOoTPkptFtSVzQevY/yWtZwf/RxyVnPy/OcA9HBM3MlGDnBEYL5B41H0MTn0Uec8Hi+2qUtTfG2WWZBmMejQ==}
 
   '@types/node@22.13.4':
     resolution: {integrity: sha512-ywP2X0DYtX3y08eFVx5fNIw7/uIv8hYUKgXoK8oayJlLnKcRfEYCxWMVE1XagUdVtCJlZT1AU4LXEABW+L1Peg==}
@@ -1438,6 +1433,9 @@ packages:
   istanbul-reports@2.2.7:
     resolution: {integrity: sha512-uu1F/L1o5Y6LzPVSVZXNOoD/KXpJue9aeLRd0sM9uMXfZvzomB0WxVamWb5ue8kA2vVWEmW7EG+A5n3f1kqHKg==}
     engines: {node: '>=6'}
+
+  joi@17.13.3:
+    resolution: {integrity: sha512-otDA4ldcIx+ZXsKHWmp0YizCweVRZG96J10b0FevjfuncLO1oX59THoAmHkNubYJ+9gWsYsp5k8v4ib6oDv1fA==}
 
   js-tokens@3.0.2:
     resolution: {integrity: sha512-RjTcuD4xjtthQkaWH7dFlH85L+QaVtSoOyGdZ3g6HFhS9dFNDfLyqgm2NFe2X6cQpeFmt0452FJjFG5UameExg==}
@@ -2870,22 +2868,11 @@ snapshots:
   '@biomejs/cli-win32-x64@1.9.4':
     optional: true
 
-  '@hapi/address@2.1.4': {}
+  '@hapi/hoek@9.3.0': {}
 
-  '@hapi/bourne@1.3.2': {}
-
-  '@hapi/hoek@8.5.1': {}
-
-  '@hapi/joi@15.1.1':
+  '@hapi/topo@5.1.0':
     dependencies:
-      '@hapi/address': 2.1.4
-      '@hapi/bourne': 1.3.2
-      '@hapi/hoek': 8.5.1
-      '@hapi/topo': 3.1.6
-
-  '@hapi/topo@3.1.6':
-    dependencies:
-      '@hapi/hoek': 8.5.1
+      '@hapi/hoek': 9.3.0
 
   '@jridgewell/gen-mapping@0.3.8':
     dependencies:
@@ -2906,6 +2893,14 @@ snapshots:
 
   '@nicolo-ribaudo/chokidar-2@2.1.8-no-fsevents.3':
     optional: true
+
+  '@sideway/address@4.1.5':
+    dependencies:
+      '@hapi/hoek': 9.3.0
+
+  '@sideway/formula@3.0.1': {}
+
+  '@sideway/pinpoint@2.0.0': {}
 
   '@types/node@22.13.4':
     dependencies:
@@ -3821,6 +3816,14 @@ snapshots:
   istanbul-reports@2.2.7:
     dependencies:
       html-escaper: 2.0.2
+
+  joi@17.13.3:
+    dependencies:
+      '@hapi/hoek': 9.3.0
+      '@hapi/topo': 5.1.0
+      '@sideway/address': 4.1.5
+      '@sideway/formula': 3.0.1
+      '@sideway/pinpoint': 2.0.0
 
   js-tokens@3.0.2: {}
 

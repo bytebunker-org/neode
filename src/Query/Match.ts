@@ -1,36 +1,38 @@
 // TODO: Rename this, NodePattern?
-import Model from "../Model";
 
-export class Match {
-	constructor(alias, model = false, properties = []) {
-		this._alias = alias;
-		this._model = model;
-		this._properties = properties;
-	}
+import { Model } from "../Model.js";
+import type { Property } from "./Property.js";
+
+export class Match<
+	T extends Record<string, unknown> = Record<string, unknown>,
+> {
+	constructor(
+		private readonly alias: string,
+		private readonly model: Model<T> | string | undefined,
+		private readonly properties: Property[] = [],
+	) {}
 
 	toString() {
-		const alias = this._alias || "";
-		let model = "";
+		const alias = this.alias || "";
+		let modelName = "";
 		let properties = "";
 
-		if (this._model instanceof Model) {
-			model = `:${this._model.labels().join(":")}`;
-		} else if (typeof this._model == "string") {
-			model = `:${this._model}`;
+		if (this.model instanceof Model) {
+			modelName = `:${this.model.labels.join(":")}`;
+		} else if (typeof this.model === "string") {
+			modelName = `:${this.model}`;
 		}
 
-		if (this._properties.length) {
+		if (this.properties.length) {
 			properties = " { ";
 
-			properties += this._properties
-				.map((property) => {
-					return property.toInlineString();
-				})
+			properties += this.properties
+				.map((property) => property.toInlineString())
 				.join(", ");
 
 			properties += " }";
 		}
 
-		return `(${alias}${model ? model : ""}${properties})`;
+		return `(${alias}${modelName ? modelName : ""}${properties})`;
 	}
 }

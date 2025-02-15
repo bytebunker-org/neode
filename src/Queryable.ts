@@ -1,4 +1,6 @@
+import type neo4j from "neo4j-driver";
 import type { NodeCollection } from "../types/index.js";
+import type { Model } from "./Model.js";
 import type { Neode } from "./Neode.js";
 import type { Node } from "./Node.js";
 import { Builder } from "./Query/Builder.js";
@@ -10,42 +12,41 @@ import { FindWithinDistance } from "./Services/FindWithinDistance.js";
 import { First } from "./Services/First.js";
 import { MergeOn } from "./Services/MergeOn.js";
 
-export class Queryable<T> {
+export class Queryable<T extends Record<string, unknown>> {
 	private readonly _neode: Neode;
+	private _model!: Model<T>;
 
 	constructor(neode: Neode) {
 		this._neode = neode;
 	}
 
+	protected setModel(_model: Model<T>) {
+		this._model = _model;
+	}
+
 	/**
 	 * Return a new Query Builder
-	 *
-	 * @return {Builder}
 	 */
-	query() {
+	public query(): Builder {
 		return new Builder(this._neode);
 	}
 
 	/**
 	 * Create a new instance of this Model
-	 *
-	 * @param  {object} properties
-	 * @return {Promise}
 	 */
-	create(properties) {
-		return Create(this._neode, this, properties);
+	public create(properties: T): Promise<Node<T>> {
+		return Create<T>(this._neode, this._model, properties);
 	}
 
 	/**
 	 * Merge a node based on the defined indexes
 	 *
-	 * @param  {Object} properties
-	 * @return {Promise}
+	 * @param properties
 	 */
-	merge(properties) {
-		const merge_on = this.mergeFields();
+	public merge(properties: T): Promise<Node<T>> {
+		const merge_on = this._model.mergeFields;
 
-		return MergeOn(this._neode, this, merge_on, properties);
+		return MergeOn(this._neode, this._model, merge_on, properties);
 	}
 
 	/**
@@ -55,14 +56,14 @@ export class Queryable<T> {
 	 * @param  {Object} set   Properties to set
 	 * @return {Promise}
 	 */
-	mergeOn<T>(
+	mergeOn(
 		match: Record<string, unknown>,
 		set: Record<string, unknown>,
 	): Node<T> {
-		const merge_on = Object.keys(match);
+		const mergeOn = Object.keys(match);
 		const properties = Object.assign({}, match, set);
 
-		return MergeOn(this._neode, this, merge_on, properties);
+		return MergeOn(this._neode, this._model, mergeOn, properties);
 	}
 
 	/**
@@ -83,29 +84,21 @@ export class Queryable<T> {
 	 * @param  {Int}                 skip
 	 * @return {Promise}
 	 */
-	all(properties, order, limit, skip) {
+	public all(properties, order, limit, skip) {
 		return FindAll(this._neode, this, properties, order, limit, skip);
 	}
 
 	/**
 	 * Find a Node by its Primary Key
-	 *
-	 * @param id
 	 */
-	find(id): Promise<Node<T>> {
-		const primary_key = this.primaryKey();
-
-		return this.first(primary_key, id);
+	public find(id: string | number): Promise<Node<T>> {
+		return this.first(this._model.primaryKey, id);
 	}
 
 	/**
-	 * Find a Node by it's internal node ID
-	 *
-	 * @param  {String} model
-	 * @param  {int}    id
-	 * @return {Promise}
+	 * Find a Node by its internal node ID
 	 */
-	public findById(id) {
+	public findById(id: number) {
 		return FindById(this._neode, this, id);
 	}
 

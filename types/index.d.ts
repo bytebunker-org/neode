@@ -343,7 +343,7 @@ declare namespace Neode {
 		| StringPropertyTypes
 		| NodesPropertyTypes
 		| "boolean"
-		| "Point";
+		| "point";
 
 	type Direction =
 		| "direction_in"
