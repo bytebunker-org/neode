@@ -12,7 +12,7 @@ import { CleanValue } from "./CleanValue.js";
 export function GenerateDefaultValues<T extends Record<string, unknown>>(
 	neode: Neode,
 	model: Model<T> | RelationshipType<T>,
-	properties: T,
+	properties: Partial<T>,
 ): T {
 	const schema = model.schema;
 	const output: Record<string, unknown> = {};

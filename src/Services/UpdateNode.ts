@@ -1,7 +1,15 @@
-import CleanValue from "./CleanValue.js";
-import Validator from "./Validator";
+import type { Model } from "../Model.js";
+import type { Neode } from "../Neode.js";
+import type { Integerable, NodePropertyObject } from "../types.js";
+import { CleanValue } from "./CleanValue.js";
+import { Validator } from "./Validator.js";
 
-export function UpdateNode(neode, model, identity, properties) {
+export async function UpdateNode<T extends Record<string, unknown>>(
+	neode: Neode,
+	model: Model<T>,
+	identity: Integerable,
+	properties: Partial<T>,
+): Promise<{ key: string; value: unknown }[]> {
 	const query = `
         MATCH (node)
         WHERE id(node) = $identity
@@ -13,28 +21,34 @@ export function UpdateNode(neode, model, identity, properties) {
     `;
 
 	// Clean up values
-	const schema = model.schema();
+	const schema = model.schema;
+	const cleanedProperties: Record<string, unknown> = {};
 
-	Object.keys(schema).forEach((key) => {
-		const config =
-			typeof schema[key] == "string"
-				? { type: schema[key] }
-				: schema[key];
+	for (const [key, value] of Object.entries(schema)) {
+		const nodeProperty =
+			typeof value === "string"
+				? ({ type: schema[key] } as NodePropertyObject)
+				: (value as NodePropertyObject);
 
 		// Clean Value
 		if (properties[key]) {
-			properties[key] = CleanValue(config, properties[key]);
+			cleanedProperties[key] = CleanValue(nodeProperty, properties[key]);
 		}
+	}
+
+	const validatedProperties = await Validator(
+		neode,
+		model,
+		cleanedProperties as Partial<T>,
+	);
+
+	const result = await neode.writeCypher(query, {
+		identity,
+		properties: validatedProperties,
 	});
 
-	return Validator(neode, model, properties).then((properties) => {
-		return neode
-			.writeCypher(query, { identity, properties })
-			.then((res) => {
-				return res.records.map((row) => ({
-					key: row.get("key"),
-					value: row.get("value"),
-				}));
-			});
-	});
+	return result.records.map((row) => ({
+		key: row.get("key") as string,
+		value: row.get("value") as unknown,
+	}));
 }

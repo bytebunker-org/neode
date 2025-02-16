@@ -10,23 +10,23 @@ import { GenerateDefaultValues } from "./GenerateDefaultValues.js";
 import { Validator } from "./Validator.js";
 
 export async function RelateTo<
-	T extends Record<string, unknown>,
+	R extends Record<string, unknown>,
 	S extends Record<string, unknown>,
 	E extends Record<string, unknown>,
 >(
 	neode: Neode,
 	from: Node<S>,
 	to: Node<E>,
-	relationship: RelationshipType<T>,
-	properties: Record<string, unknown>,
+	relationship: RelationshipType<R>,
+	properties: Partial<R> = {},
 	forceCreate = false,
-): Promise<Relationship<T, S | E, S | E>> {
-	const propertiesWithDefaults = GenerateDefaultValues(
+): Promise<Relationship<R, S | E, S | E>> {
+	const propertiesWithDefaults = GenerateDefaultValues<R>(
 		neode,
 		relationship,
 		properties,
 	);
-	const validatedProperties = await Validator(
+	const validatedProperties = await Validator<R>(
 		neode,
 		relationship,
 		propertiesWithDefaults,
@@ -69,16 +69,18 @@ export async function RelateTo<
 	const result = await neode.writeCypher(query, params);
 
 	const relation = result.records[0].get("rel");
-	const hydrateFrom =
-		relationship.direction === RelationshipDirectionEnum.IN ? to : from;
-	const hydrateTo =
-		relationship.direction === RelationshipDirectionEnum.OUT ? from : to;
+	const hydrateFrom = (
+		relationship.direction === RelationshipDirectionEnum.IN ? to : from
+	) as Node<S | E>;
+	const hydrateTo = (
+		relationship.direction === RelationshipDirectionEnum.OUT ? from : to
+	) as Node<S | E>;
 
 	const relationProperties = new Map(
 		Object.entries(relation.properties),
-	) as EntityPropertyMap<T>;
+	) as EntityPropertyMap<R>;
 
-	return new Relationship<T, S | E, S | E>(
+	return new Relationship<R, S | E, S | E>(
 		neode,
 		relationship,
 		relation.identity,

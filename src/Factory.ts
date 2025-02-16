@@ -16,6 +16,7 @@ import { hasOwn } from "./util/util.js";
 interface HydratedDataRecord extends Record<string, unknown> {
 	[EAGER_ID]: neo4j.Integer;
 	[EAGER_LABELS]?: string[];
+	[EAGER_TYPE]?: string;
 }
 
 export class Factory {
@@ -31,7 +32,7 @@ export class Factory {
 	hydrateFirst<T extends Record<string, unknown>>(
 		result: QueryResult | undefined,
 		alias: string,
-		definition?: Model<T>,
+		definition?: Model<T> | string,
 	): Node<T> | undefined {
 		const firstResult: Record<string, unknown> | undefined =
 			result?.records?.[0]?.get(alias);
@@ -53,7 +54,7 @@ export class Factory {
 	public hydrate<T extends Record<string, unknown>>(
 		result: QueryResult | undefined,
 		alias: string,
-		definition?: Model<T>,
+		definition?: Model<T> | string,
 	): NodeCollection<T> {
 		let nodes: Node<T>[] = [];
 
@@ -208,17 +209,17 @@ export class Factory {
 	>(
 		definition: RelationshipType<T>,
 		record: HydratedDataRecord,
-		thisNode: Node<S | E>,
-	): Relationship<T, S, E> {
+		thisNode: Node<S>,
+	): Relationship<T, S | E, S | E> {
 		// Get Internals
 		const identity = record[EAGER_ID];
-		const type = record[EAGER_TYPE];
+		const type = record[EAGER_TYPE]!;
 
 		// Get Definition from
 		// const definition = this.getDefinition(labels);
 
 		// Get Properties
-		const properties = new Map();
+		const properties = new Map() as EntityPropertyMap<T>;
 
 		for (const [key] of definition.properties.entries()) {
 			if (hasOwn(record, key)) {
@@ -227,20 +228,20 @@ export class Factory {
 		}
 
 		// Start & End Nodes
-		const otherNode = this.hydrateNode(
-			record[definition.nodeAlias] as Record<string, unknown>,
+		const otherNode = this.hydrateNode<E>(
+			record[definition.nodeAlias] as E,
 		);
 
 		// Calculate Start & End Nodes
 		const startNode =
 			definition.direction === RelationshipDirectionEnum.IN
-				? otherNode
-				: thisNode;
+				? (otherNode as Node<S | E>)
+				: (thisNode as Node<S | E>);
 
 		const endNode =
 			definition.direction === RelationshipDirectionEnum.IN
-				? thisNode
-				: otherNode;
+				? (thisNode as Node<S | E>)
+				: (otherNode as Node<S | E>);
 
 		return new Relationship(
 			this.neode,

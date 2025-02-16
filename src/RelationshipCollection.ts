@@ -1,5 +1,6 @@
 import type { Neode } from "./Neode.js";
 import type { Relationship } from "./Relationship.js";
+import type { SerializedGraph } from "./types.js";
 
 export class RelationshipCollection<
 	T extends Record<string, unknown>,
@@ -35,7 +36,7 @@ export class RelationshipCollection<
 	/**
 	 * Map the 'toJson' function on all values
 	 */
-	public toJson() {
-		return Promise.all(this.map((value) => value.toJson()));
+	public toJson(): SerializedGraph[] {
+		return this.map((r) => r.toJson());
 	}
 }

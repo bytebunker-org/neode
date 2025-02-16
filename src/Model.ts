@@ -7,6 +7,7 @@ import {
 	RelationshipType,
 } from "./RelationshipType.js";
 import type {
+	EntityPropertyMap,
 	NodeProperty,
 	NodesPropertyTypes,
 	PropertyTypes,
@@ -26,13 +27,13 @@ export class Model<T extends Record<string, unknown>> extends Queryable<T> {
 	private readonly _name: string;
 	private readonly _schema: SchemaObject;
 
-	private readonly _properties: Map<string, Property>;
+	private readonly _properties: Map<keyof T & string, Property>;
 	private readonly _relationships: Map<
 		string,
 		RelationshipType<Record<string, unknown>>
 	>;
 	private _labels: string[];
-	private _primary_key: string;
+	private _primaryKey: keyof T & string;
 	private readonly _unique: string[];
 	private readonly _indexed: string[];
 	private readonly _hidden: string[];
@@ -51,7 +52,7 @@ export class Model<T extends Record<string, unknown>> extends Queryable<T> {
 		this._labels = [name];
 
 		// Default Primary Key to {label}_id
-		this._primary_key = `${name.toLowerCase()}_id`;
+		this._primaryKey = `${name.toLowerCase()}_id`;
 
 		this._unique = [];
 		this._indexed = [];
@@ -155,7 +156,7 @@ export class Model<T extends Record<string, unknown>> extends Queryable<T> {
 
 		// Is this key the primary key?
 		if (property.primary) {
-			this._primary_key = key;
+			this._primaryKey = key;
 		}
 
 		// Is this property unique?
@@ -194,12 +195,12 @@ export class Model<T extends Record<string, unknown>> extends Queryable<T> {
 	 * @param cascade Cascade delete policy for this relationship
 	 * @param nodeAlias Alias to give to the node in the pattern comprehension
 	 */
-	public relationship<T extends Record<string, unknown>>(
+	public relationship<O extends Record<string, unknown>>(
 		name: string,
 		type: NodesPropertyTypes | RelationshipPropertyTypes,
 		relationship: string,
 		direction = RelationshipDirectionEnum.BOTH,
-		target?: string | Model<T>,
+		target?: Model<O> | string,
 		schema: SchemaObject = {},
 		eager = false,
 		cascade: boolean | RelationshipCascadePolicyEnum = false,
@@ -208,12 +209,12 @@ export class Model<T extends Record<string, unknown>> extends Queryable<T> {
 		if (relationship && direction && schema) {
 			this._relationships.set(
 				name,
-				new RelationshipType(
+				new RelationshipType<Record<string, unknown>>(
 					name,
 					type,
 					relationship,
 					direction,
-					target,
+					target as Model<Record<string, unknown>> | string,
 					schema,
 					eager,
 					cascade,
@@ -247,8 +248,8 @@ export class Model<T extends Record<string, unknown>> extends Queryable<T> {
 	/**
 	 * Get the name of the primary key
 	 */
-	public get primaryKey(): string {
-		return this._primary_key;
+	public get primaryKey(): keyof T & string {
+		return this._primaryKey;
 	}
 
 	/**

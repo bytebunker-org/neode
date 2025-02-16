@@ -1,9 +1,17 @@
 export class WhereRaw {
-	constructor(statement) {
-		this._statement = statement;
+	private negative = false;
+
+	constructor(private readonly statement: string) {}
+
+	public setNegative(): this {
+		this.negative = true;
+
+		return this;
 	}
 
-	toString() {
-		return this._statement;
+	public toString(): string {
+		const negative = this.negative ? "NOT " : "";
+
+		return `${negative}${this.statement}`;
 	}
 }

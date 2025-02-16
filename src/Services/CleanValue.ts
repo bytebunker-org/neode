@@ -1,5 +1,5 @@
 import neo4j, { type Integer, type Point } from "neo4j-driver";
-import type { NodePropertyObject } from "../types.js";
+import type { NodePropertyObject, PointObject } from "../types.js";
 import { hasOwn } from "../util/util.js";
 
 const temporal = [
@@ -12,7 +12,9 @@ const temporal = [
 const isTemporalType = (type: string): type is (typeof temporal)[number] =>
 	temporal.includes(type as (typeof temporal)[number]);
 
-function parsePoint(value: unknown): Point<number | Integer> | undefined {
+function parsePoint(
+	value: PointObject | unknown,
+): Point<number | Integer> | undefined {
 	if (!value || typeof value !== "object") {
 		return undefined;
 	}

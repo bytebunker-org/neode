@@ -1,9 +1,40 @@
 import neo4j, { type Session } from "neo4j-driver";
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
+import type {
+	RelationshipDirectionEnum,
+	RelationshipType,
+} from "../RelationshipType.js";
+import type { Integerable } from "../types.js";
+import type { IStatement } from "./IStatement.js";
 import { Match } from "./Match.js";
+import { Order, type OrderDirectionEnum } from "./Order.js";
+import { Property } from "./Property.js";
+import type { Return } from "./Return.js";
 import { Statement } from "./Statement.js";
-import { WhereStatement } from "./WhereStatement.js";
+import { Where } from "./Where.js";
+import { WhereBetween } from "./WhereBetween.js";
+import { WhereId } from "./WhereId.js";
+import { WhereRaw } from "./WhereRaw.js";
+import { OPERATOR_EQUALS, WhereStatement } from "./WhereStatement.js";
+import { WithDistinctStatement } from "./WithDistinctStatement.js";
+import { WithStatement } from "./WithStatement.js";
+
+type WhereParams<T extends Record<string, unknown>> = T | string;
+type FullWhereParams<T extends Record<string, unknown>> =
+	| [WhereParams<T>]
+	| [left: keyof T & string, value: unknown]
+	| [left: keyof T & string, operator: string, value: unknown];
+type FullInternalWhereArgs<T extends Record<string, unknown>> =
+	| FullWhereParams<T>
+	| [FullWhereParams<T>[]];
+
+type OrderByParams<T extends Record<string, unknown>> =
+	| [property: keyof T & string, order: OrderDirectionEnum]
+	| [Record<keyof T & string, OrderDirectionEnum>];
+type OrderByParamsOrArray<T extends Record<string, unknown>> =
+	| OrderByParams<T>
+	| [OrderByParams<T>[]];
 
 export enum QueryMode {
 	READ = "READ",
@@ -12,12 +43,22 @@ export enum QueryMode {
 
 export class Builder {
 	private _params: Record<string, unknown> = {};
-	private _statements: Statement[] = [];
+	private _statements: IStatement[] = [];
 	private _current: Statement | undefined;
 	private _where: WhereStatement | undefined;
 	private _setCount = 0;
 
 	constructor(private readonly _neode: Neode) {}
+
+	private get current(): Statement {
+		if (!this._current) {
+			throw new Error(
+				"You must add a statement before using other builder methods",
+			);
+		}
+
+		return this._current;
+	}
 
 	/**
 	 * Start a new Query segment and set the current statement
@@ -30,16 +71,6 @@ export class Builder {
 		this._current = new Statement(prefix);
 
 		return this;
-	}
-
-	private get current(): Statement {
-		if (!this._current) {
-			throw new Error(
-				"You must add a statement before using other builder methods",
-			);
-		}
-
-		return this._current;
 	}
 
 	/**
@@ -64,20 +95,20 @@ export class Builder {
 	/**
 	 * Match a Node by a definition
 	 *
-	 * @param alias           Alias in query
-	 * @param  {Model|String}  model    Model definition
-	 * @param  {Object|null}   properties   Inline Properties
-	 * @return {Builder}                Builder
+	 * @param alias Alias in query
+	 * @param model Model definition
+	 * @param properties Inline Properties
+	 * @return Builder
 	 */
-	match<T extends Record<string, unknown>>(
-		alias: string,
-		model: Model<T> | string,
-		properties: Partial<T>,
-	) {
+	public match<T extends Record<string, unknown>>(
+		alias?: string,
+		model?: Model<T> | string,
+		properties: Partial<T> = {},
+	): this {
 		this.whereStatement("WHERE");
 		this.statement();
 
-		this._current?.match(
+		(this.current as Statement<T>).match(
 			new Match(
 				alias,
 				model,
@@ -88,11 +119,14 @@ export class Builder {
 		return this;
 	}
 
-	optionalMatch(alias, model) {
+	public optionalMatch<T extends Record<string, unknown>>(
+		alias: string,
+		model?: Model<T> | string,
+	): this {
 		this.whereStatement("WHERE");
 		this.statement("OPTIONAL MATCH");
 
-		this._current.match(new Match(alias, model));
+		(this.current as Statement<T>).match(new Match(alias, model));
 
 		return this;
 	}
@@ -100,10 +134,9 @@ export class Builder {
 	/**
 	 * Add a 'with' statement to the query
 	 *
-	 * @param  {...String} args Variables/aliases to carry through
-	 * @return {Builder}
+	 * @param args Variables/aliases to carry through
 	 */
-	with(...args) {
+	public with(...args: string[]): this {
 		this.whereStatement("WHERE");
 		this.statement();
 
@@ -118,7 +151,7 @@ export class Builder {
 	 * @param  {...String} args Variables/aliases to carry through
 	 * @return {Builder}
 	 */
-	withDistinct(...args) {
+	public withDistinct(...args: string[]): this {
 		this.whereStatement("WHERE");
 		this.statement();
 
@@ -128,68 +161,108 @@ export class Builder {
 	}
 
 	/**
-	 * Create a new WhereSegment
-	 * @param  {...mixed} args
-	 * @return {Builder}
+	 * Add a where condition to the current statement.
+	 *
+	 * @param values Object with key/values to match or an array where all entries are passed to the where function
 	 */
-	or(...args) {
-		this.whereStatement("OR");
-
-		return this.where(...args);
-	}
+	or<T extends Record<string, unknown>>(
+		values: FullWhereParams<T>[] | WhereParams<T>,
+	): this;
 
 	/**
-	 * Generate a unique key and add the value to the params object
-	 *
-	 * @param {String} key
-	 * @param {Mixed} value
+	 * Add a where condition to the current statement.
+	 * @param left the key to check
+	 * @param value the expected value
 	 */
-	_addWhereParameter(key, value) {
-		let attempt = 1;
-		const base = `where_${key.replace(/[^a-z0-9]+/g, "_")}`;
+	or<T extends Record<string, unknown>>(
+		left: keyof T & string,
+		value: unknown,
+	): this;
 
-		// Try to create a unique key
-		let variable = base;
+	/**
+	 * Add a where condition to the current statement.
+	 * @param left the key to check
+	 * @param operator the CypherQL operator for the statement
+	 * @param value the expected value
+	 */
+	or<T extends Record<string, unknown>>(
+		left: keyof T & string,
+		operator: string,
+		value: unknown,
+	): this;
+	or<T extends Record<string, unknown>>(
+		...args: FullInternalWhereArgs<T>
+	): this {
+		this.whereStatement("OR");
 
-		while (typeof this._params[variable] != "undefined") {
-			attempt++;
-
-			variable = `${base}_${attempt}`;
-		}
-
-		this._params[variable] = value;
-
-		return variable;
+		// @ts-ignore - internal API
+		return this.where(...args);
 	}
 
 	/**
 	 * Add a where condition to the current statement.
 	 *
-	 * @param  {...mixed} args Arguments
-	 * @return {Builder}
+	 * @param values Object with key/values to match or an array where all entries are passed to the where function
 	 */
-	where(...args) {
-		if (!args.length || !args[0]) return this;
+	public where<T extends Record<string, unknown>>(
+		values: FullWhereParams<T>[] | WhereParams<T>,
+	): this;
+
+	/**
+	 * Add a where condition to the current statement.
+	 * @param left the key to check
+	 * @param value the expected value
+	 */
+	public where<T extends Record<string, unknown>>(
+		left: keyof T & string,
+		value: unknown,
+	): this;
+
+	/**
+	 * Add a where condition to the current statement.
+	 * @param left the key to check
+	 * @param operator the CypherQL operator for the statement
+	 * @param value the expected value
+	 */
+	public where<T extends Record<string, unknown>>(
+		left: keyof T & string,
+		operator: string,
+		value: unknown,
+	): this;
+
+	public where<T extends Record<string, unknown>>(
+		...args: FullInternalWhereArgs<T>
+	): this {
+		if (!this._where) {
+			throw new Error(
+				"You must add a where statement before adding a where clause",
+			);
+		}
+
+		if (!args.length || !args[0]) {
+			return this;
+		}
 
 		// If 2 character length, it should be straight forward where
-		if (args.length == 2) {
+		if (args.length === 2) {
 			args = [args[0], OPERATOR_EQUALS, args[1]];
 		}
 
 		// If only one argument, treat it as a single string
-		if (args.length == 1) {
+		if (args.length === 1) {
 			const [arg] = args;
 
 			if (Array.isArray(arg)) {
-				arg.forEach((inner) => {
-					this.where(...inner);
-				});
-			} else if (typeof arg == "object") {
-				Object.keys(arg).forEach((key) => {
-					this.where(key, arg[key]);
-				});
-			} else {
-				this._where.append(new WhereRaw(args[0]));
+				for (const inner of arg) {
+					// @ts-ignore - internal API
+					this.where(...(inner as FullWhereParams<T>));
+				}
+			} else if (typeof arg === "object") {
+				for (const [key, value] of Object.entries(arg)) {
+					this.where(key, value);
+				}
+			} else if (typeof arg === "string") {
+				this._where?.append(new WhereRaw(arg));
 			}
 		} else {
 			const [left, operator, value] = args;
@@ -204,12 +277,14 @@ export class Builder {
 
 	/**
 	 * Query on Internal ID
-	 *
-	 * @param  {String} alias
-	 * @param  {Int}    value
-	 * @return {Builder}
 	 */
-	whereId(alias, value) {
+	public whereId(alias: string, value: Integerable): this {
+		if (!this._where) {
+			throw new Error(
+				"You must add a where statement before adding a where clause",
+			);
+		}
+
 		const param = this._addWhereParameter(`${alias}_id`, neo4j.int(value));
 
 		this._where.append(new WhereId(alias, param));
@@ -219,11 +294,14 @@ export class Builder {
 
 	/**
 	 * Add a raw where clause
-	 *
-	 * @param  {String} clause
-	 * @return {Builder}
 	 */
-	whereRaw(clause) {
+	public whereRaw(clause: string): this {
+		if (!this._where) {
+			throw new Error(
+				"You must add a where statement before adding a where clause",
+			);
+		}
+
 		this._where.append(new WhereRaw(clause));
 
 		return this;
@@ -232,73 +310,96 @@ export class Builder {
 	/**
 	 * A negative where clause
 	 *
-	 * @param {*} args
-	 * @return {Builder}
+	 * @param values Object with key/values to match or an array where all entries are passed to the where function
 	 */
-	whereNot(...args) {
+	whereNot<T extends Record<string, unknown>>(
+		values: FullWhereParams<T>[] | WhereParams<T>,
+	): this;
+
+	/**
+	 * A negative where clause
+	 *
+	 * @param left the key to check
+	 * @param value the expected value
+	 */
+	whereNot<T extends Record<string, unknown>>(
+		left: keyof T & string,
+		value: unknown,
+	): this;
+
+	/**
+	 * A negative where clause
+	 *
+	 * @param left the key to check
+	 * @param operator the CypherQL operator for the statement
+	 * @param value the expected value
+	 */
+	whereNot<T extends Record<string, unknown>>(
+		left: keyof T & string,
+		operator: string,
+		value: unknown,
+	): this;
+	whereNot<T extends Record<string, unknown>>(
+		...args: FullInternalWhereArgs<T>
+	): this {
+		// @ts-ignore - internal API
 		this.where(...args);
 
-		this._where.last().setNegative();
+		this._where!.last.setNegative();
 
 		return this;
 	}
 
 	/**
 	 * Between clause
-	 *
-	 * @param {String} alias
-	 * @param {Mixed} floor
-	 * @param {Mixed} ceiling
-	 * @return {Builder}
 	 */
-	whereBetween(alias, floor, ceiling) {
-		const floor_alias = this._addWhereParameter(`${alias}_floor`, floor);
-		const ceiling_alias = this._addWhereParameter(
+	public whereBetween(alias: string, floor: unknown, ceiling: unknown): this {
+		if (!this._where) {
+			throw new Error(
+				"You must add a where statement before adding a where clause",
+			);
+		}
+
+		const floorAlias = this._addWhereParameter(`${alias}_floor`, floor);
+		const ceilingAlias = this._addWhereParameter(
 			`${alias}_ceiling`,
 			ceiling,
 		);
 
-		this._where.append(new WhereBetween(alias, floor_alias, ceiling_alias));
+		this._where.append(new WhereBetween(alias, floorAlias, ceilingAlias));
 
 		return this;
 	}
 
 	/**
 	 * Negative Between clause
-	 *
-	 * @param {String} alias
-	 * @param {Mixed} floor
-	 * @param {Mixed} ceiling
-	 * @return {Builder}
 	 */
-	whereNotBetween(alias, floor, ceiling) {
+	public whereNotBetween(
+		alias: string,
+		floor: unknown,
+		ceiling: unknown,
+	): this {
 		this.whereBetween(alias, floor, ceiling);
 
-		this._where.last().setNegative();
+		this._where!.last.setNegative();
 
 		return this;
 	}
 
 	/**
 	 * Set Delete fields
-	 *
-	 * @param  {...mixed} args
-	 * @return {Builder}
 	 */
-	delete(...args) {
-		this._current.delete(...args);
+	public delete(...args: string[]): this {
+		this.current.delete(...args);
 
 		return this;
 	}
 
 	/**
 	 * Set Detach Delete fields
-	 *
-	 * @param  {...mixed} args
-	 * @return {Builder}
 	 */
-	detachDelete(...args) {
-		this._current.detachDelete(...args);
+	public detachDelete(...args: string[]): this {
+		this.current.detachDelete(...args);
 
 		return this;
 	}
@@ -306,16 +407,19 @@ export class Builder {
 	/**
 	 * Start a Create Statement by alias/definition
 	 *
-	 * @param  {String} alias               Alias in query
-	 * @param  {Model|String}  model        Model definition
-	 * @param  {Object|null}   properties   Inline Properties
-	 * @return {Builder}                    Builder
+	 * @param alias Alias in query
+	 * @param model Model definition
+	 * @param properties Inline Properties
 	 */
-	create(alias, model, properties) {
+	public create<T extends Record<string, unknown>>(
+		alias?: string,
+		model?: Model<T> | string,
+		properties: Partial<T> = {},
+	): this {
 		this.whereStatement("WHERE");
 		this.statement("CREATE");
 
-		this._current.match(
+		(this.current as Statement<T>).match(
 			new Match(
 				alias,
 				model,
@@ -324,40 +428,24 @@ export class Builder {
 		);
 
 		return this;
-	}
-
-	/**
-	 * Convert a map of properties into an Array of
-	 *
-	 * @param {Object|null} properties
-	 */
-	_convertPropertyMap(alias, properties) {
-		if (properties) {
-			return Object.keys(properties).map((key) => {
-				const property_alias = `${alias}_${key}`;
-
-				this._params[property_alias] = properties[key];
-
-				return new Property(key, property_alias);
-			});
-		}
-
-		return [];
 	}
 
 	/**
 	 * Start a Merge Statement by alias/definition
 	 *
-	 * @param  {String}        alias        Alias in query
-	 * @param  {Model|String}  model        Model definition
-	 * @param  {Object|null}   properties   Inline Properties
-	 * @return {Builder}                    Builder
+	 * @param alias Alias in query
+	 * @param model Model definition
+	 * @param properties Inline Properties
 	 */
-	merge(alias, model, properties) {
+	public merge<T extends Record<string, unknown>>(
+		alias?: string,
+		model?: string | Model<T>,
+		properties: Partial<T> = {},
+	): this {
 		this.whereStatement("WHERE");
 		this.statement("MERGE");
 
-		this._current.match(
+		(this.current as Statement<T>).match(
 			new Match(
 				alias,
 				model,
@@ -369,28 +457,56 @@ export class Builder {
 	}
 
 	/**
+	 * Set multiple properties
+	 *
+	 * @param properties Array of {@link Property} objects to set
+	 */
+	public set<T extends Record<string, unknown> = Record<string, unknown>>(
+		properties: Property<T>[],
+	): this;
+
+	/**
+	 * Set multiple properties
+	 *
+	 * @param properties Object of properties to set
+	 */
+	public set<T extends Record<string, unknown> = Record<string, unknown>>(
+		properties: Partial<T>,
+	): this;
+
+	/**
 	 * Set a property
 	 *
-	 * @param {String|Object} property   Property in {alias}.{property} format
-	 * @param {Mixed}         value      Value
-	 * @param {String}        operator   Operator
+	 * @param property Property in {alias}.{property} format
+	 * @param value Value
+	 * @param operator Operator
 	 */
-	set(property, value, operator = "=") {
+	public set<T extends Record<string, unknown> = Record<string, unknown>>(
+		property: keyof T & string,
+		value: unknown,
+		operator?: string,
+	): this;
+
+	public set<T extends Record<string, unknown> = Record<string, unknown>>(
+		property: (keyof T & string) | Partial<T> | Property<T>[],
+		value?: unknown,
+		operator = "=",
+	): this {
 		// Support a map of properties
-		if (!value && property instanceof Object) {
-			Object.keys(property).forEach((key) => {
-				this.set(key, property[key]);
-			});
+		if (!value && property && typeof property === "object") {
+			for (const [key, value] of Object.entries(property)) {
+				this.set(key, value);
+			}
 		} else {
-			if (value !== undefined) {
+			if (typeof property === "string" && value !== undefined) {
 				const alias = `set_${this._setCount}`;
 				this._params[alias] = value;
 
 				this._setCount++;
 
-				this._current.set(property, alias, operator);
-			} else {
-				this._current.setRaw(property);
+				this.current.set(property, alias, operator);
+			} else if (Array.isArray(property)) {
+				(this.current as Statement<T>).setRaw(property);
 			}
 		}
 
@@ -398,50 +514,88 @@ export class Builder {
 	}
 
 	/**
-	 * Set a property
+	 * Set multiple properties on create
 	 *
-	 * @param {String|Object} property   Property in {alias}.{property} format
-	 * @param {Mixed}         value      Value
-	 * @param {String}        operator   Operator
+	 * @param properties Object of properties to set
 	 */
-	onCreateSet(property, value, operator = "=") {
+	public onCreateSet<
+		T extends Record<string, unknown> = Record<string, unknown>,
+	>(properties: Partial<T>): this;
+
+	/**
+	 * Set a property on create
+	 *
+	 * @param property Property in {alias}.{property} format
+	 * @param value Value
+	 * @param operator Operator
+	 */
+	public onCreateSet<
+		T extends Record<string, unknown> = Record<string, unknown>,
+	>(property: keyof T & string, value: unknown, operator?: string): this;
+
+	public onCreateSet<
+		T extends Record<string, unknown> = Record<string, unknown>,
+	>(
+		property: (keyof T & string) | Partial<T>,
+		value?: unknown,
+		operator = "=",
+	): this {
 		// Support a map of properties
-		if (value === undefined && property instanceof Object) {
-			Object.keys(property).forEach((key) => {
-				this.onCreateSet(key, property[key]);
-			});
-		} else {
+		if (value === undefined && property && typeof property === "object") {
+			for (const [key, value] of Object.entries(property)) {
+				this.onCreateSet(key, value);
+			}
+		} else if (typeof property === "string") {
 			const alias = `set_${this._setCount}`;
 			this._params[alias] = value;
 
 			this._setCount++;
 
-			this._current.onCreateSet(property, alias, operator);
+			this.current.onCreateSet(property, alias, operator);
 		}
 
 		return this;
 	}
 
 	/**
-	 * Set a property
+	 * Set multiple properties on match
 	 *
-	 * @param {String|Object} property   Property in {alias}.{property} format
-	 * @param {Mixed}         value      Value
-	 * @param {String}        operator   Operator
+	 * @param properties Object of properties to set
 	 */
-	onMatchSet(property, value, operator = "=") {
+	public onMatchSet<
+		T extends Record<string, unknown> = Record<string, unknown>,
+	>(properties: Partial<T>): this;
+
+	/**
+	 * Set a property on match
+	 *
+	 * @param property Property in {alias}.{property} format
+	 * @param value Value
+	 * @param operator Operator
+	 */
+	public onMatchSet<
+		T extends Record<string, unknown> = Record<string, unknown>,
+	>(property: keyof T & string, value: unknown, operator?: string): this;
+
+	public onMatchSet<
+		T extends Record<string, unknown> = Record<string, unknown>,
+	>(
+		property: (keyof T & string) | Partial<T>,
+		value?: unknown,
+		operator = "=",
+	): this {
 		// Support a map of properties
-		if (value === undefined && property instanceof Object) {
-			Object.keys(property).forEach((key) => {
-				this.onMatchSet(key, property[key]);
-			});
-		} else {
+		if (value === undefined && property && typeof property === "object") {
+			for (const [key, value] of Object.entries(property)) {
+				this.onMatchSet(key, value);
+			}
+		} else if (typeof property === "string") {
 			const alias = `set_${this._setCount}`;
 			this._params[alias] = value;
 
 			this._setCount++;
 
-			this._current.onMatchSet(property, alias, operator);
+			this.current.onMatchSet(property, alias, operator);
 		}
 
 		return this;
@@ -450,47 +604,36 @@ export class Builder {
 	/**
 	 * Remove properties or labels in {alias}.{property}
 	 * or {alias}:{Label} format
-	 *
-	 * @param {[String]} items
 	 */
-	remove(...items) {
-		this._current.remove(items);
+	public remove(...items: string[]): this {
+		this.current.remove(items);
 
 		return this;
 	}
 
 	/**
 	 * Set Return fields
-	 *
-	 * @param  {...mixed} args
-	 * @return {Builder}
 	 */
-	return(...args) {
-		this._current.return(...args);
+	public return(...args: (Return | string)[]): this {
+		this.current.return(...args);
 
 		return this;
 	}
 
 	/**
 	 * Set Record Limit
-	 *
-	 * @param  {Int} limit
-	 * @return {Builder}
 	 */
-	limit(limit) {
-		this._current.limit(limit);
+	public limit(limit: number): this {
+		this.current.limit(limit);
 
 		return this;
 	}
 
 	/**
 	 * Set Records to Skip
-	 *
-	 * @param  {Int} skip
-	 * @return {Builder}
 	 */
-	skip(skip) {
-		this._current.skip(skip);
+	public skip(skip: number): this {
+		this.current.skip(skip);
 
 		return this;
 	}
@@ -498,37 +641,67 @@ export class Builder {
 	/**
 	 * Add an order by statement
 	 *
-	 * @param  {...String|object} args  Order by statements
-	 * @return {Builder}
+	 * @param property Property to order by
+	 * @param direction The order direction
 	 */
-	orderBy(...args) {
-		let order_by;
+	public orderBy<T extends Record<string, unknown> = Record<string, unknown>>(
+		property: keyof T & string,
+		direction: OrderDirectionEnum,
+	): this;
 
-		if (args.length == 2) {
+	/**
+	 * Add an order by statement
+	 *
+	 * @param properties Object of properties to order by
+	 */
+	public orderBy<T extends Record<string, unknown> = Record<string, unknown>>(
+		properties: Record<keyof T & string, OrderDirectionEnum>,
+	): this;
+
+	/**
+	 * Add an order by statement
+	 *
+	 * @param orderBy Array of order by statements
+	 */
+	public orderBy<T extends Record<string, unknown> = Record<string, unknown>>(
+		orderBy: OrderByParams<T>[],
+	): this;
+
+	/**
+	 * Add an order by statement
+	 *
+	 * @param args Order by statements
+	 */
+	public orderBy<T extends Record<string, unknown> = Record<string, unknown>>(
+		...args: OrderByParamsOrArray<T>
+	): this;
+
+	public orderBy<T extends Record<string, unknown> = Record<string, unknown>>(
+		...args: OrderByParamsOrArray<T>
+	): this {
+		let orderBy: Order<T> | undefined;
+
+		if (args.length === 2) {
 			// Assume orderBy(what, how)
-			order_by = new Order(args[0], args[1]);
+			orderBy = new Order(args[0], args[1]);
 		} else if (Array.isArray(args[0])) {
 			// Handle array of where's
-			args[0].forEach((arg) => {
+			for (const arg of args[0]) {
+				// @ts-ignore - internal API
 				this.orderBy(arg);
-			});
-		}
-		// TODO: Ugly, stop supporting this
-		else if (typeof args[0] == "object" && args[0].field) {
-			// Assume orderBy(args[0].field, args[0].order)
-			order_by = new Order(args[0].field, args[0].order);
-		} else if (typeof args[0] == "object") {
+			}
+		} else if (typeof args[0] === "object") {
 			// Assume {key: order}
-			Object.keys(args[0]).forEach((key) => {
-				this.orderBy(key, args[0][key]);
-			});
+			for (const [key, order] of Object.entries(args[0])) {
+				this.orderBy(key, order);
+			}
 		} else if (args[0]) {
 			// Assume orderBy(what, 'ASC')
-			order_by = new Order(args[0]);
+			orderBy = new Order(args[0]);
 		}
 
-		if (order_by) {
-			this._current.order(order_by);
+		if (orderBy) {
+			(this.current as Statement<T>).order(orderBy);
 		}
 
 		return this;
@@ -537,27 +710,37 @@ export class Builder {
 	/**
 	 * Add a relationship to the query
 	 *
-	 * @param  {String|RelationshipType} relationship  Relationship name or RelationshipType object
-	 * @param  {String}                  direction     Direction of relationship DIRECTION_IN, DIRECTION_OUT
-	 * @param  {String|null}             alias         Relationship alias
-	 * @param  {Int|String}              degrees        Number of traversdegreesals (1, "1..2", "0..2", "..3")
-	 * @return {Builder}
+	 * @param relationship Relationship name or RelationshipType object
+	 * @param direction Direction of relationship DIRECTION_IN, DIRECTION_OUT
+	 * @param alias Relationship alias
+	 * @param degrees Number of degrees (1, "1..2", "0..2", "..3")
 	 */
-	relationship(relationship, direction, alias, degrees) {
-		this._current.relationship(relationship, direction, alias, degrees);
+	public relationship<
+		T extends Record<string, unknown>,
+		E extends Record<string, unknown>,
+	>(
+		relationship?: RelationshipType<T, E> | string,
+		direction?: RelationshipDirectionEnum,
+		alias?: string,
+		degrees?: number | string,
+	): this {
+		this.current.relationship(relationship, direction, alias, degrees);
 
 		return this;
 	}
 
 	/**
 	 * Complete a relationship
-	 * @param  {String} alias       Alias
-	 * @param  {Model}  model       Model definition
-	 * @param  {Object} properties  Properties
-	 * @return {Builder}
+	 * @param alias Alias
+	 * @param model Model definition
+	 * @param properties  Properties
 	 */
-	to(alias, model, properties) {
-		this._current.match(
+	public to<T extends Record<string, unknown> = Record<string, unknown>>(
+		alias?: string,
+		model?: Model<T> | string,
+		properties: Partial<T> = {},
+	): this {
+		(this.current as Statement<T>).match(
 			new Match(
 				alias,
 				model,
@@ -570,46 +753,41 @@ export class Builder {
 
 	/**
 	 * Complete the relationship statement to point to anything
-	 *
-	 * @return {Builder}
 	 */
-	toAnything() {
-		this._current.match(new Match());
+	public toAnything(): this {
+		this.current.match(new Match());
 
 		return this;
 	}
 
 	/**
 	 * Build the pattern without any keywords
-	 *
-	 * @return {String}
 	 */
-	pattern() {
+	public pattern(): string {
 		this.whereStatement();
 		this.statement();
 
 		return this._statements
-			.map((statement) => {
-				return statement.toString(false);
-			})
+			.map((statement) => statement.toString(false))
 			.join("\n");
 	}
 
+	// TODO: output parameters doesn't do anything?
 	/**
 	 * Build the Query
 	 *
-	 * @param  {...String} output References to output
-	 * @return {Object}           Object containing `query` and `params` property
+	 * @param output References to output
 	 */
-	build() {
+	public build(...output: string[]): {
+		query: string;
+		params: Record<string, unknown>;
+	} {
 		// Append Statement to Statements
 		this.whereStatement();
 		this.statement();
 
 		const query = this._statements
-			.map((statement) => {
-				return statement.toString();
-			})
+			.map((statement) => statement.toString())
 			.join("\n");
 
 		return {
@@ -643,5 +821,45 @@ export class Builder {
 		} finally {
 			session?.close();
 		}
+	}
+
+	/**
+	 * Convert a map of properties into an Array of
+	 */
+	private _convertPropertyMap<T extends Record<string, unknown>>(
+		alias?: string,
+		properties: Partial<T> = {},
+	): Property[] {
+		return Object.entries(properties).map(([key, value]) => {
+			const property_alias = alias ? `${alias}_${key}` : key;
+
+			this._params[property_alias] = value;
+
+			return new Property(key, property_alias);
+		});
+	}
+
+	/**
+	 * Generate a unique key and add the value to the params object
+	 *
+	 * @param key
+	 * @param value
+	 */
+	private _addWhereParameter(key: string, value: unknown) {
+		let attempt = 1;
+		const base = `where_${key.replace(/[^a-z0-9]+/g, "_")}`;
+
+		// Try to create a unique key
+		let variable = base;
+
+		while (typeof this._params[variable] !== "undefined") {
+			attempt++;
+
+			variable = `${base}_${attempt}`;
+		}
+
+		this._params[variable] = value;
+
+		return variable;
 	}
 }

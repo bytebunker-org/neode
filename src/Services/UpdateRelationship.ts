@@ -1,7 +1,15 @@
-import CleanValue from "./CleanValue.js";
-import Validator from "./Validator";
+import type { Neode } from "../Neode.js";
+import type { RelationshipType } from "../RelationshipType.js";
+import type { Integerable, NodePropertyObject } from "../types.js";
+import { CleanValue } from "./CleanValue.js";
+import { Validator } from "./Validator.js";
 
-export function UpdateRelationship(neode, model, identity, properties) {
+export async function UpdateRelationship<T extends Record<string, unknown>>(
+	neode: Neode,
+	model: RelationshipType<T>,
+	identity: Integerable,
+	properties: Partial<T>,
+) {
 	const query = `
         MATCH ()-[rel]->()
         WHERE id(rel) = $identity
@@ -10,25 +18,34 @@ export function UpdateRelationship(neode, model, identity, properties) {
     `;
 
 	// Clean up values
-	const schema = model.schema();
+	const schema = model.schema;
+	const cleanedProperties: Record<string, unknown> = {};
 
-	Object.keys(schema).forEach((key) => {
-		const config =
-			typeof schema[key] == "string"
-				? { type: schema[key] }
-				: schema[key];
+	for (const [key, value] of Object.entries(schema)) {
+		const relationshipProperty =
+			typeof value === "string"
+				? ({ type: schema[key] } as NodePropertyObject)
+				: (value as NodePropertyObject);
 
 		// Clean Value
 		if (properties[key]) {
-			properties[key] = CleanValue(config, properties[key]);
+			cleanedProperties[key] = CleanValue(
+				relationshipProperty,
+				properties[key],
+			);
 		}
+	}
+
+	const validatedProperties = await Validator<Partial<T>>(
+		neode,
+		model,
+		cleanedProperties as Partial<T>,
+	);
+
+	const result = await neode.writeCypher(query, {
+		identity,
+		properties: validatedProperties,
 	});
 
-	return Validator(neode, model, properties).then((properties) => {
-		return neode
-			.writeCypher(query, { identity, properties })
-			.then((res) => {
-				return res.records[0].get("properties");
-			});
-	});
+	return result.records[0].get("properties");
 }

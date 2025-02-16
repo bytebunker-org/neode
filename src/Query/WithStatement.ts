@@ -1,10 +1,15 @@
-export class WithStatement {
-	constructor(...args) {
-		this._with = args;
+import type { IStatement } from "./IStatement.js";
+
+export class WithStatement implements IStatement {
+	private readonly with: string[];
+
+	constructor(...args: string[]) {
+		this.with = args;
 	}
 
-	toString() {
-		const vars = this._with.join(",");
-		return "WITH " + vars;
+	public toString(): string {
+		const vars = this.with.join(",");
+
+		return `WITH ${vars}`;
 	}
 }

@@ -7,13 +7,13 @@ export class Match<
 	T extends Record<string, unknown> = Record<string, unknown>,
 > {
 	constructor(
-		private readonly alias: string,
-		private readonly model: Model<T> | string | undefined,
+		private readonly alias?: string,
+		private readonly model?: Model<T> | string,
 		private readonly properties: Property[] = [],
 	) {}
 
-	toString() {
-		const alias = this.alias || "";
+	public toString(): string {
+		const alias = this.alias ?? "";
 		let modelName = "";
 		let properties = "";
 

@@ -1,4 +1,8 @@
+import type { IStatement } from "./IStatement.js";
 import type { Where } from "./Where.js";
+import type { WhereBetween } from "./WhereBetween.js";
+import type { WhereId } from "./WhereId.js";
+import type { WhereRaw } from "./WhereRaw.js";
 
 export enum WhereStatementConnectorEnum {
 	AND = "AND",
@@ -6,9 +10,12 @@ export enum WhereStatementConnectorEnum {
 	XOR = "XOR",
 }
 
-export class WhereStatement {
+export const OPERATOR_EQUALS = "=";
+
+export class WhereStatement implements IStatement {
 	private readonly _prefix: string;
-	private readonly _clauses: Where[] = [];
+	private readonly _clauses: (Where | WhereRaw | WhereId | WhereBetween)[] =
+		[];
 	private _connector: WhereStatementConnectorEnum =
 		WhereStatementConnectorEnum.AND;
 
@@ -18,10 +25,8 @@ export class WhereStatement {
 
 	/**
 	 * Return the last condition in the collection
-	 *
-	 * @return {Where}
 	 */
-	public get last(): Where {
+	public get last(): Where | WhereRaw | WhereId {
 		return this._clauses[this._clauses.length - 1];
 	}
 
@@ -37,7 +42,7 @@ export class WhereStatement {
 	 *
 	 * @param clause Where clause to append
 	 */
-	public append(clause: Where): this {
+	public append(clause: Where | WhereRaw | WhereId | WhereBetween): this {
 		this._clauses.push(clause);
 
 		return this;

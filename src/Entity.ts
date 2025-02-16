@@ -1,9 +1,28 @@
 /* eslint indent: 0 */
-import neo4j from "neo4j-driver";
+import neo4j, { type Integer } from "neo4j-driver";
 import type { Model } from "./Model.js";
+import type { Node } from "./Node.js";
+import type { NodeCollection } from "./NodeCollection.js";
 import type { Property } from "./Property.js";
+import type { Relationship } from "./Relationship.js";
+import type { RelationshipCollection } from "./RelationshipCollection.js";
 import type { RelationshipType } from "./RelationshipType.js";
 import type { EntityPropertyMap } from "./types.js";
+
+export type EagerObject<O extends Record<string, unknown>> =
+	| Node<O>
+	| NodeCollection<O>
+	| Relationship<O, Record<string, unknown>, Record<string, unknown>>
+	| RelationshipCollection<
+			O,
+			Record<string, unknown>,
+			Record<string, unknown>
+	  >;
+
+export type EagerMap<T extends Record<string, unknown>> = Map<
+	keyof T & string,
+	EagerObject<Record<string, unknown>>
+>;
 
 /**
  * Convert a raw property into a JSON friendly format
@@ -63,7 +82,7 @@ export abstract class Entity<T extends Record<string, unknown>> {
 	/**
 	 * Return internal ID as a Neo4j Integer
 	 */
-	public abstract get identity(): neo4j.Integer;
+	public abstract get identity(): Integer;
 
 	/**
 	 * Get the Model or RelationshipType for this Entity
@@ -72,9 +91,7 @@ export abstract class Entity<T extends Record<string, unknown>> {
 
 	protected abstract get internalProperties(): EntityPropertyMap<T>;
 
-	protected abstract get internalEagerProperties():
-		| EntityPropertyMap<T>
-		| undefined;
+	protected abstract get internalEagerProperties(): EagerMap<T> | undefined;
 
 	/**
 	 * Return the Node's properties as an Object
@@ -82,10 +99,14 @@ export abstract class Entity<T extends Record<string, unknown>> {
 	 * @return {Object}
 	 */
 	public properties(): T {
-		const output: Record<string, unknown> = {};
+		const output = {} as T;
 
-		for (const [key, property] of this.model.properties.entries()) {
+		const propertyIterator = this.model.properties.entries() as MapIterator<
+			[keyof T & string, Property]
+		>;
+		for (const [key, property] of propertyIterator) {
 			if (!property.hidden && this.internalProperties.has(key)) {
+				// @ts-ignore
 				output[key] = valueToJson(
 					property,
 					this.internalProperties.get(key),
@@ -93,7 +114,7 @@ export abstract class Entity<T extends Record<string, unknown>> {
 			}
 		}
 
-		return output as T;
+		return output;
 	}
 
 	/**
@@ -125,6 +146,8 @@ export abstract class Entity<T extends Record<string, unknown>> {
 		return fallback;
 	}
 
+	public abstract toJson(): Record<string, unknown>;
+
 	/**
 	 * Convert a raw property into a JSON friendly format
 	 * TODO: Should this actually convert a property on this entity? Check the original code
@@ -132,6 +155,4 @@ export abstract class Entity<T extends Record<string, unknown>> {
 	protected valueToJson(property: Property, value: unknown): unknown {
 		return valueToJson(property, value);
 	}
-
-	public abstract toJson(): Record<string, unknown>;
 }

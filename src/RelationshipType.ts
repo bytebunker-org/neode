@@ -1,6 +1,7 @@
 import type { Model } from "./Model.js";
 import { Property } from "./Property.js";
 import type {
+	EntityPropertyMap,
 	NodeProperty,
 	NodesPropertyTypes,
 	RelationshipLikePropertyObject,
@@ -21,17 +22,20 @@ export enum RelationshipCascadePolicyEnum {
 
 export const DEFAULT_ALIAS = "node";
 
-export class RelationshipType<T extends Record<string, unknown>> {
+export class RelationshipType<
+	T extends Record<string, unknown>,
+	E extends Record<string, unknown> = Record<string, unknown>,
+> {
 	private readonly _name: string;
 	private readonly _type: NodesPropertyTypes | RelationshipPropertyTypes;
 	private readonly _relationship: string;
 	private _direction: RelationshipDirectionEnum;
-	private readonly _target: string | Model<T> | undefined;
+	private readonly _target: string | Model<E> | undefined;
 	private readonly _schema: SchemaObject;
 	private readonly _eager: boolean;
 	private readonly _cascade: boolean | RelationshipCascadePolicyEnum;
-	private readonly _node_alias: string;
-	private readonly _properties = new Map<string, Property>();
+	private readonly _nodeAlias: string;
+	private readonly _properties: Map<keyof T & string, Property> = new Map();
 
 	/**
 	 * @param name The name given to the relationship
@@ -49,7 +53,7 @@ export class RelationshipType<T extends Record<string, unknown>> {
 		type: NodesPropertyTypes | RelationshipPropertyTypes,
 		relationship: string,
 		direction: RelationshipDirectionEnum,
-		target: string | Model<T> | undefined,
+		target: string | Model<E> | undefined,
 		schema: SchemaObject = {},
 		eager = false,
 		cascade: boolean | RelationshipCascadePolicyEnum = false,
@@ -65,7 +69,7 @@ export class RelationshipType<T extends Record<string, unknown>> {
 
 		this._eager = eager;
 		this._cascade = cascade;
-		this._node_alias = node_alias;
+		this._nodeAlias = node_alias;
 
 		for (const [key, value] of Object.entries(schema)) {
 			this._properties.set(key, new Property(key, value as NodeProperty));
@@ -103,7 +107,7 @@ export class RelationshipType<T extends Record<string, unknown>> {
 	/**
 	 * Get the target node definition
 	 */
-	public get target(): string | Model<T> | undefined {
+	public get target(): string | Model<E> | undefined {
 		return this._target;
 	}
 
@@ -132,7 +136,7 @@ export class RelationshipType<T extends Record<string, unknown>> {
 	 * Get the alias given to the node
 	 */
 	public get nodeAlias(): string {
-		return this._node_alias;
+		return this._nodeAlias;
 	}
 
 	/**
@@ -149,7 +153,7 @@ export class RelationshipType<T extends Record<string, unknown>> {
 	/**
 	 * Get Properties defined for this relationship
 	 */
-	public get properties(): Map<string, Property> {
+	public get properties() {
 		return this._properties;
 	}
 }

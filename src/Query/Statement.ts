@@ -2,25 +2,28 @@ import {
 	type RelationshipDirectionEnum,
 	RelationshipType,
 } from "../RelationshipType.js";
+import type { IStatement } from "./IStatement.js";
 import type { Match } from "./Match.js";
 import type { Order } from "./Order.js";
 import { Property } from "./Property.js";
 import { Relationship } from "./Relationship.js";
+import type { Return } from "./Return.js";
 import type { WhereStatement } from "./WhereStatement.js";
 
 export class Statement<
 	T extends Record<string, unknown> = Record<string, unknown>,
-> {
+> implements IStatement
+{
 	private readonly _prefix: string;
-	private _pattern: (Match | Relationship)[] = [];
+	private _pattern: (Match<T> | Relationship)[] = [];
 	private _where: WhereStatement[] = [];
-	private _order: Order[] = [];
-	private _detach_delete: any[] = [];
-	private _delete: any[] = [];
-	private _return: Return[] = [];
-	private _set: Property[] = [];
-	private _on_create_set: Property[] = [];
-	private _on_match_set: Property[] = [];
+	private _order: Order<T>[] = [];
+	private _detach_delete: string[] = [];
+	private _delete: string[] = [];
+	private _return: (Return | string)[] = [];
+	private _set: Property<T>[] = [];
+	private _on_create_set: Property<T>[] = [];
+	private _on_match_set: Property<T>[] = [];
 	private _remove: string[] = [];
 
 	private _limit?: number;
@@ -30,7 +33,7 @@ export class Statement<
 		this._prefix = prefix;
 	}
 
-	public match(match: Match): this {
+	public match(match: Match<T>): this {
 		this._pattern.push(match);
 
 		return this;
@@ -54,35 +57,38 @@ export class Statement<
 		return this;
 	}
 
-	public order(order: Order): this {
+	public order(order: Order<T>): this {
 		this._order.push(order);
 
 		return this;
 	}
 
-	public delete(...values) {
+	public delete(...values: string[]) {
 		this._delete = this._delete.concat(values);
 
 		return this;
 	}
 
-	public detachDelete(...values) {
+	public detachDelete(...values: string[]) {
 		this._detach_delete = this._detach_delete.concat(values);
 
 		return this;
 	}
 
-	public return(...values: Return[]) {
+	public return(...values: (Return | string)[]) {
 		this._return = this._return.concat(values);
 
 		return this;
 	}
 
-	public relationship<T extends Record<string, unknown>>(
-		relationship: RelationshipType<T> | string,
-		direction: RelationshipDirectionEnum,
-		alias: string,
-		degrees: number,
+	public relationship<
+		T extends Record<string, unknown>,
+		E extends Record<string, unknown>,
+	>(
+		relationship?: RelationshipType<T, E> | string,
+		direction?: RelationshipDirectionEnum,
+		alias?: string,
+		degrees?: number | string,
 	): this {
 		if (relationship instanceof RelationshipType) {
 			const rel = relationship;
@@ -98,26 +104,38 @@ export class Statement<
 		return this;
 	}
 
-	public set(key: string, valueParam: string, operator = "="): this {
-		this._set.push(new Property(key, valueParam, operator));
+	public set(
+		key: keyof T & string,
+		valueParam: string,
+		operator = "=",
+	): this {
+		this._set.push(new Property<T>(key, valueParam, operator));
 
 		return this;
 	}
 
-	public setRaw(items: Property[]): this {
+	public setRaw(items: Property<T>[]): this {
 		this._set = this._set.concat(items);
 
 		return this;
 	}
 
-	public onCreateSet(key: string, valueParam: string, operator = "="): this {
-		this._on_create_set.push(new Property(key, valueParam, operator));
+	public onCreateSet(
+		key: keyof T & string,
+		valueParam: string,
+		operator = "=",
+	): this {
+		this._on_create_set.push(new Property<T>(key, valueParam, operator));
 
 		return this;
 	}
 
-	public onMatchSet(key: string, valueParam: string, operator = "="): this {
-		this._on_match_set.push(new Property(key, valueParam, operator));
+	public onMatchSet(
+		key: keyof T & string,
+		valueParam: string,
+		operator = "=",
+	): this {
+		this._on_match_set.push(new Property<T>(key, valueParam, operator));
 
 		return this;
 	}

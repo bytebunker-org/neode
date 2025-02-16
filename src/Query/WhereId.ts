@@ -1,17 +1,20 @@
 export class WhereId {
-	constructor(alias, param) {
-		this._alias = alias;
-		this._param = param;
+	private negative = false;
 
-		this._negative = false;
+	constructor(
+		private readonly alias: string,
+		private readonly paramName: string,
+	) {}
+
+	public setNegative(): this {
+		this.negative = true;
+
+		return this;
 	}
 
-	setNegative() {
-		this._negative = true;
-	}
+	public toString(): string {
+		const negative = this.negative ? "NOT " : "";
 
-	toString() {
-		const negative = this._negative ? "NOT " : "";
-		return `${negative}id(${this._alias}) = $${this._param}`;
+		return `${negative}id(${this.alias}) = $${this.paramName}`;
 	}
 }

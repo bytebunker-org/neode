@@ -1,53 +1,43 @@
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
 import type { Node } from "../Node.js";
-import { Builder } from "../Query/Builder.js";
+import { Builder, QueryMode } from "../Query/Builder.js";
 import { eagerNode } from "../Query/EagerUtils.js";
-import type { Queryable } from "../Queryable.js";
 import { GenerateDefaultValues } from "./GenerateDefaultValues.js";
-/*
-import GenerateDefaultValues from './GenerateDefaultValues';
-import Node from '../Node';
-import Validator from './Validator';
-import { DIRECTION_IN, DIRECTION_OUT } from '../RelationshipType';
-import { eagerNode } from '../Query/EagerUtils';
-
-const MAX_CREATE_DEPTH = 99;
-const ORIGINAL_ALIAS = 'this';
-*/
 import { Validator } from "./Validator.js";
 import { ORIGINAL_ALIAS, addNodeToStatement } from "./WriteUtils.js";
 
-export function MergeOn<T extends Record<string, unknown>>(
+export async function MergeOn<T extends Record<string, unknown>>(
 	neode: Neode,
 	model: Model<T>,
-	merge_on: Record<string, unknown>,
-	properties: Record<string, unknown>,
-): Promise<Node<T>> {
-	return GenerateDefaultValues(neode, model, properties)
-		.then((properties) => Validator(neode, model, properties))
-		.then((properties) => {
-			const alias = ORIGINAL_ALIAS;
+	mergeOn: (keyof T & string)[],
+	properties: T,
+): Promise<Node<T> | undefined> {
+	const defaultedProperties = GenerateDefaultValues(neode, model, properties);
+	const validatedProperties = await Validator(
+		neode,
+		model,
+		defaultedProperties,
+	);
 
-			const builder = new Builder(neode);
+	const alias = ORIGINAL_ALIAS;
 
-			addNodeToStatement(
-				neode,
-				builder,
-				alias,
-				model,
-				properties,
-				[alias],
-				"merge",
-				merge_on,
-			);
+	const builder = new Builder(neode);
 
-			// Output
-			const output = eagerNode(neode, 1, alias, model);
+	addNodeToStatement(
+		neode,
+		builder,
+		alias,
+		model,
+		validatedProperties,
+		[alias],
+		"merge",
+		mergeOn,
+	);
 
-			return builder
-				.return(output)
-				.execute(mode.WRITE)
-				.then((res) => neode.hydrateFirst(res, alias));
-		});
+	// Output
+	const output = eagerNode(neode, 1, alias, model);
+
+	const result = await builder.return(output).execute(QueryMode.WRITE);
+	return neode.hydrateFirst(result, alias);
 }

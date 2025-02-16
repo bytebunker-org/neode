@@ -17,12 +17,15 @@ export const MAX_EAGER_DEPTH = 3;
  * @param alias Alias for the starting node
  * @param rel Type of relationship
  */
-export function eagerPattern<T extends Record<string, unknown>>(
+export function eagerPattern<
+	T extends Record<string, unknown>,
+	E extends Record<string, unknown>,
+>(
 	neode: Neode,
 	depth: number,
 	alias: string,
-	rel: RelationshipType<T>,
-) {
+	rel: RelationshipType<T, E>,
+): string {
 	const builder = new Builder(neode);
 
 	const name = rel.name;
@@ -30,26 +33,26 @@ export function eagerPattern<T extends Record<string, unknown>>(
 	const relationship = rel.relationship;
 	const direction = rel.direction;
 	const target = rel.target;
-	const relationship_variable = `${alias}_${name}_rel`;
-	const node_variable = `${alias}_${name}_node`;
+	const relationshipVariable = `${alias}_${name}_rel`;
+	const nodeVariable = `${alias}_${name}_node`;
 
-	let target_model = undefined;
+	let targetModel: Model<E> | undefined = undefined;
 	try {
-		target_model = neode.model(target);
-	} catch (e) {}
+		targetModel = typeof target === "string" ? neode.model(target) : target;
+	} catch (error) {}
 
 	// Build Pattern
 	builder
 		.match(alias)
-		.relationship(relationship, direction, relationship_variable)
-		.to(node_variable, target_model);
+		.relationship(relationship, direction, relationshipVariable)
+		.to(nodeVariable, targetModel);
 
-	let fields = node_variable;
+	let fields = nodeVariable;
 
 	switch (type) {
 		case "node":
 		case "nodes":
-			fields = eagerNode(neode, depth + 1, node_variable, target_model);
+			fields = eagerNode(neode, depth + 1, nodeVariable, targetModel);
 			break;
 
 		case "relationship":
@@ -57,10 +60,10 @@ export function eagerPattern<T extends Record<string, unknown>>(
 			fields = eagerRelationship(
 				neode,
 				depth + 1,
-				relationship_variable,
-				rel.nodeAlias(),
-				node_variable,
-				target_model,
+				relationshipVariable,
+				rel.nodeAlias,
+				nodeVariable,
+				targetModel,
 			);
 	}
 
@@ -87,8 +90,8 @@ export function eagerNode<T extends Record<string, unknown>>(
 	neode: Neode,
 	depth: number,
 	alias: string,
-	model: Model<T>,
-) {
+	model?: Model<T>,
+): string {
 	const indent = "  ".repeat(depth * 2);
 	let pattern = `\n${indent} ${alias} { `;
 
@@ -130,7 +133,7 @@ export function eagerRelationship<T extends Record<string, unknown>>(
 	alias: string,
 	nodeAlias: string,
 	nodeVariable: string,
-	nodeModel: Model<T>,
+	nodeModel?: Model<T>,
 ): string {
 	const indent = "  ".repeat(depth * 2);
 	let pattern = `\n${indent} ${alias} { `;

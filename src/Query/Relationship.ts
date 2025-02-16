@@ -5,7 +5,7 @@ export class Relationship {
 		private readonly relationship?: string,
 		private readonly direction?: RelationshipDirectionEnum,
 		private readonly alias?: string,
-		private readonly traversals?: number,
+		private readonly traversals?: number | string,
 	) {}
 
 	toString() {

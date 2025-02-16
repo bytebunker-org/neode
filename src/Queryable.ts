@@ -1,9 +1,10 @@
-import type neo4j from "neo4j-driver";
-import type { NodeCollection } from "../types/index.js";
+import type { QueryResult } from "neo4j-driver";
 import type { Model } from "./Model.js";
 import type { Neode } from "./Neode.js";
 import type { Node } from "./Node.js";
+import type { NodeCollection } from "./NodeCollection.js";
 import { Builder } from "./Query/Builder.js";
+import type { OrderDirectionEnum } from "./Query/Order.js";
 import { Create } from "./Services/Create.js";
 import { DeleteAll } from "./Services/DeleteAll.js";
 import { FindAll } from "./Services/FindAll.js";
@@ -11,6 +12,7 @@ import { FindById } from "./Services/FindById.js";
 import { FindWithinDistance } from "./Services/FindWithinDistance.js";
 import { First } from "./Services/First.js";
 import { MergeOn } from "./Services/MergeOn.js";
+import type { Integerable, PointObject } from "./types.js";
 
 export class Queryable<T extends Record<string, unknown>> {
 	private readonly _neode: Neode;
@@ -18,10 +20,6 @@ export class Queryable<T extends Record<string, unknown>> {
 
 	constructor(neode: Neode) {
 		this._neode = neode;
-	}
-
-	protected setModel(_model: Model<T>) {
-		this._model = _model;
 	}
 
 	/**
@@ -34,7 +32,7 @@ export class Queryable<T extends Record<string, unknown>> {
 	/**
 	 * Create a new instance of this Model
 	 */
-	public create(properties: T): Promise<Node<T>> {
+	public create(properties: T): Promise<Node<T> | undefined> {
 		return Create<T>(this._neode, this._model, properties);
 	}
 
@@ -43,10 +41,10 @@ export class Queryable<T extends Record<string, unknown>> {
 	 *
 	 * @param properties
 	 */
-	public merge(properties: T): Promise<Node<T>> {
-		const merge_on = this._model.mergeFields;
+	public merge(properties: T): Promise<Node<T> | undefined> {
+		const mergeOn = this._model.mergeFields;
 
-		return MergeOn(this._neode, this._model, merge_on, properties);
+		return MergeOn(this._neode, this._model, mergeOn, properties);
 	}
 
 	/**
@@ -56,83 +54,100 @@ export class Queryable<T extends Record<string, unknown>> {
 	 * @param  {Object} set   Properties to set
 	 * @return {Promise}
 	 */
-	mergeOn(
-		match: Record<string, unknown>,
-		set: Record<string, unknown>,
-	): Node<T> {
+	public mergeOn(
+		match: Partial<T>,
+		set: Partial<T>,
+	): Promise<Node<T> | undefined> {
 		const mergeOn = Object.keys(match);
-		const properties = Object.assign({}, match, set);
+		const properties = {
+			...match,
+			...set,
+		} as T;
 
-		return MergeOn(this._neode, this._model, mergeOn, properties);
+		return MergeOn<T>(this._neode, this._model, mergeOn, properties);
 	}
 
 	/**
 	 * Delete all nodes for this model
-	 *
-	 * @return {Promise}
 	 */
-	public deleteAll() {
-		return DeleteAll(this._neode, this);
+	public deleteAll(): Promise<QueryResult> {
+		return DeleteAll(this._neode, this._model);
 	}
 
 	/**
 	 * Get a collection of nodes for this label
-	 *
-	 * @param  {Object}              properties
-	 * @param  {String|Array|Object} order
-	 * @param  {Int}                 limit
-	 * @param  {Int}                 skip
-	 * @return {Promise}
 	 */
-	public all(properties, order, limit, skip) {
-		return FindAll(this._neode, this, properties, order, limit, skip);
+	public all(
+		properties: Partial<T>,
+		order?:
+			| (keyof T & string)
+			| Record<keyof T & string, OrderDirectionEnum>,
+		limit?: number,
+		skip?: number,
+	): Promise<Node<T>[]> {
+		return FindAll(
+			this._neode,
+			this._model,
+			properties,
+			order,
+			limit,
+			skip,
+		);
 	}
 
 	/**
 	 * Find a Node by its Primary Key
 	 */
-	public find(id: string | number): Promise<Node<T>> {
+	public find(id: string | number): Promise<Node<T> | undefined> {
 		return this.first(this._model.primaryKey, id);
 	}
 
 	/**
 	 * Find a Node by its internal node ID
 	 */
-	public findById(id: number) {
-		return FindById(this._neode, this, id);
+	public findById(id: Integerable): Promise<Node<T> | undefined> {
+		return FindById(this._neode, this._model, id);
 	}
 
 	/**
-	 * Find a Node by properties
+	 * Find a node by properties
 	 *
-	 * @param key Either a string for the property name or an object of values
-	 * @param value Value
+	 * @param key A string for the property name to find the node by
+	 * @param value The value to search for
 	 */
 	public first(
-		key: string | Record<string, unknown>,
-		value: string | number,
+		key: keyof T & string,
+		value: unknown,
+	): Promise<Node<T> | undefined>;
+	/**
+	 * Find a node by properties
+	 *
+	 * @param properties An object of key/value pairs to find the node by
+	 */
+	public first(properties: Partial<T>): Promise<Node<T> | undefined>;
+	public first(
+		keyOrObject: (keyof T & string) | Partial<T>,
+		value?: unknown,
 	) {
-		return First(this._neode, this, key, value);
+		return First(this._neode, this._model, keyOrObject, value);
 	}
 
 	/**
 	 * Get a collection of nodes within a certain distance belonging to this label
 	 */
 	public withinDistance(
-		location_property: string,
-		point:
-			| { x: number; y: number; z?: number }
-			| { latitude: number; longitude: number; height?: number },
+		locationProperty: string,
+		point: PointObject,
 		distance: number,
-		properties?: Record<string, unknown>,
-		order?: string | unknown[] | Record<string, unknown>,
+		properties?: Partial<T>,
+		order?: string | Record<string, OrderDirectionEnum>,
 		limit?: number,
 		skip?: number,
-	): Promise<NodeCollection> {
+	): Promise<NodeCollection<T>> {
 		return FindWithinDistance(
 			this._neode,
-			this,
-			location_property,
+			this._model,
+			locationProperty,
 			point,
 			distance,
 			properties,
@@ -140,5 +155,9 @@ export class Queryable<T extends Record<string, unknown>> {
 			limit,
 			skip,
 		);
+	}
+
+	protected setModel(_model: Model<T>) {
+		this._model = _model;
 	}
 }

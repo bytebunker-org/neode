@@ -1,4 +1,4 @@
-import type neo4j from "neo4j-driver";
+import type { Integer } from "neo4j-driver";
 import { Entity } from "./Entity.js";
 import type { Neode } from "./Neode.js";
 import type { Node } from "./Node.js";
@@ -8,7 +8,12 @@ import {
 } from "./RelationshipType.js";
 import { DeleteRelationship } from "./Services/DeleteRelationship.js";
 import { UpdateRelationship } from "./Services/UpdateRelationship.js";
-import type { EntityPropertyMap, SerializedGraph } from "./types.js";
+import type {
+	EntityPropertyMap,
+	Integerable,
+	SerializedGraph,
+} from "./types.js";
+import { hasOwn, toJSInteger, toNeo4jInteger } from "./util/util.js";
 
 export class Relationship<
 	T extends Record<string, unknown>,
@@ -17,7 +22,7 @@ export class Relationship<
 > extends Entity<T> {
 	private readonly _neode: Neode;
 	private readonly _definition: RelationshipType<T>;
-	private readonly _identity: neo4j.Integer;
+	private readonly _identity: Integerable;
 	private readonly _type: string;
 	private readonly _properties: EntityPropertyMap<T>;
 	private readonly _start: Node<S>;
@@ -39,7 +44,7 @@ export class Relationship<
 	constructor(
 		neode: Neode,
 		definition: RelationshipType<T>,
-		identity: neo4j.Integer,
+		identity: Integerable,
 		type: string,
 		properties: EntityPropertyMap<T> | undefined,
 		start: Node<S>,
@@ -76,14 +81,14 @@ export class Relationship<
 	 * Get Internal Relationship ID
 	 */
 	public override get id(): number {
-		return this._identity.toInt();
+		return toJSInteger(this._identity);
 	}
 
 	/**
 	 * Get Internal Relationship ID
 	 */
-	public override get identity(): neo4j.Integer {
-		return this._identity;
+	public override get identity(): Integer {
+		return toNeo4jInteger(this._identity);
 	}
 
 	public override get model(): RelationshipType<T> {
@@ -158,13 +163,14 @@ export class Relationship<
 	 *
 	 * @param properties New properties
 	 */
-	public async update(properties: Record<string, unknown>): Promise<this> {
+	public async update(properties: Partial<T>): Promise<this> {
 		// TODO: Temporary fix, add the properties to the properties map
 		// Sorry, but it's easier than hacking the validator
 		for (const property of this._definition.properties.values()) {
 			const name = property.name;
 
-			if (property.required && !Object.hasOwn(properties, name)) {
+			if (property.required && !hasOwn(properties, name)) {
+				// @ts-ignore
 				properties[name] = this._properties.get(name);
 			}
 		}
@@ -187,7 +193,7 @@ export class Relationship<
 	 * Delete this relationship from the Graph
 	 */
 	public async delete(): Promise<this> {
-		await DeleteRelationship(this._neode, this._identity);
+		await DeleteRelationship(this._neode, this.identity);
 		this._deleted = true;
 
 		return this;

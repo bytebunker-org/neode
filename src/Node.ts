@@ -1,5 +1,5 @@
-import neo4j from "neo4j-driver";
-import { Entity } from "./Entity.js";
+import type { Integer, QueryResult } from "neo4j-driver";
+import { type EagerMap, type EagerObject, Entity } from "./Entity.js";
 import type { Model } from "./Model.js";
 import type { Neode } from "./Neode.js";
 import type { Relationship } from "./Relationship.js";
@@ -7,7 +7,13 @@ import { RelationshipType } from "./RelationshipType.js";
 import { DeleteNode } from "./Services/DeleteNode.js";
 import { DetachFrom } from "./Services/DetachFrom.js";
 import { RelateTo } from "./Services/RelateTo.js";
-import type { EntityPropertyMap, SerializedGraph } from "./types.js";
+import { UpdateNode } from "./Services/UpdateNode.js";
+import type {
+	EntityPropertyMap,
+	Integerable,
+	SerializedGraph,
+} from "./types.js";
+import { hasOwn, toJSInteger, toNeo4jInteger } from "./util/util.js";
 
 /**
  * Node Container
@@ -15,10 +21,10 @@ import type { EntityPropertyMap, SerializedGraph } from "./types.js";
 export class Node<T extends Record<string, unknown>> extends Entity<T> {
 	private readonly _neode: Neode;
 	private readonly _model: Model<T>;
-	private readonly _identity: neo4j.Integer;
+	private readonly _identity: Integerable;
 	private readonly _labels: string[];
 	private readonly _properties: EntityPropertyMap<T>;
-	private _eager: EntityPropertyMap<T>;
+	private readonly _eager: EagerMap<T>;
 
 	private _deleted = false;
 
@@ -35,10 +41,10 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 	constructor(
 		neode: Neode,
 		model: Model<T>,
-		identity: neo4j.Integer,
+		identity: Integerable,
 		labels: string[],
-		properties: EntityPropertyMap<T> = new Map() as EntityPropertyMap<T>,
-		eager: EntityPropertyMap<T> = new Map() as EntityPropertyMap<T>,
+		properties = new Map() as EntityPropertyMap<T>,
+		eager = new Map() as EagerMap<T>,
 	) {
 		super();
 
@@ -54,14 +60,14 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 	 * Get Internal Node ID
 	 */
 	public override get id(): number {
-		return this._identity.toInt();
+		return toJSInteger(this._identity);
 	}
 
 	/**
 	 * Get Internal Node ID
 	 */
-	public override get identity(): neo4j.Integer {
-		return this._identity;
+	public override get identity(): Integer {
+		return toNeo4jInteger(this._identity);
 	}
 
 	/**
@@ -82,15 +88,18 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 		return this._properties;
 	}
 
-	public override get internalEagerProperties(): EntityPropertyMap<T> {
+	public override get internalEagerProperties(): EagerMap<T> {
 		return this._eager;
 	}
 
 	/**
 	 * Set an eager value on the fly
 	 */
-	public setEager(key: string, value: unknown): this {
-		this._eager.set(key, value);
+	public setEager<O extends Record<string, unknown>>(
+		key: string,
+		value: EagerObject<O>,
+	): this {
+		this._eager.set(key, value as EagerObject<Record<string, unknown>>);
 
 		return this;
 	}
@@ -117,46 +126,45 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 	 * @param forceCreate Force the creation a new relationship? If false, the relationship will be merged
 	 */
 	public async relateTo<
-		U extends Record<string, unknown>,
+		O extends Record<string, unknown>,
 		R extends Record<string, unknown>,
 	>(
-		node: Node<T>,
+		node: Node<O>,
 		type: string,
-		properties: R = {},
+		properties: Partial<R> = {},
 		forceCreate = false,
-	): Promise<Relationship<R, any, any>> {
-		const relationship = this._model.relationships.get(type);
+	): Promise<Relationship<R, T | O, T | O>> {
+		const relationshipType = this._model.relationships.get(type);
 
-		if (!(relationship instanceof RelationshipType)) {
+		if (!(relationshipType instanceof RelationshipType)) {
 			return Promise.reject(
 				new Error(`Cannot find relationship with type ${type}`),
 			);
 		}
 
-		const rel = await RelateTo(
+		const relationship = await RelateTo<R, T, O>(
 			this._neode,
 			this,
 			node,
-			relationship,
+			relationshipType,
 			properties,
 			forceCreate,
 		);
 		this._eager.delete(type);
 
-		return rel;
+		return relationship;
 	}
 
 	/**
-	 * Detach this node to another
+	 * Detach this node from another
 	 *
-	 * @param  {Node} node Node to detach from
-	 * @return {Promise}
+	 * @param other Node to detach from
 	 */
-	detachFrom(other) {
+	public detachFrom<O extends Record<string, unknown>>(
+		other: Node<O>,
+	): Promise<QueryResult> {
 		if (!(other instanceof Node)) {
-			return Promise.reject(
-				new Error(`Cannot find node with type ${other}`),
-			);
+			throw new Error(`Cannot find node with type ${other}`);
 		}
 
 		return DetachFrom(this._neode, this, other);
@@ -182,7 +190,11 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 					property,
 					this._properties.get(key),
 				);
-			} else if (neo4j.temporal.isDateTime(output[key])) {
+			}
+
+			// TODO: This code doesn't make sense, it tries to convert output[key] .. but output[key] is not yet set
+			/*
+			} else if (neo4j.temporal.isDateTime(output[key] as object)) {
 				output[key] = new Date(output[key].toString());
 			} else if (neo4j.spatial.isPoint(output[key])) {
 				switch (output[key].srid.toString()) {
@@ -213,67 +225,57 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 							z: output[key].z,
 						};
 						break;
+				}*/
+		}
+
+		for (const eagerRelationship of this._model.eager) {
+			const name = eagerRelationship.name;
+
+			if (this._eager.has(name)) {
+				// Call internal toJson function on either a Node, NodeCollection, Relationship or RelationshipCollection
+
+				const eagerValue = this._eager.get(name)!.toJson();
+
+				if (
+					(Array.isArray(eagerValue) && eagerValue.length) ||
+					Object.keys(eagerValue).length
+				) {
+					output[name] = eagerValue;
 				}
 			}
 		}
 
-		// Properties
-		this._model.properties().forEach((property, key) => {});
-
-		// Eager Promises
-		return (
-			Promise.all(
-				this._model.eager().map((rel) => {
-					const key = rel.name();
-
-					if (this._eager.has(rel.name())) {
-						// Call internal toJson function on either a Node or NodeCollection
-						return this._eager
-							.get(rel.name())
-							.toJson()
-							.then((value) => {
-								return { key, value };
-							});
-					}
-				}),
-			)
-				// Remove Empty
-				.then((eager) => eager.filter((e) => !!e))
-
-				// Assign to Output
-				.then((eager) => {
-					eager.forEach(({ key, value }) => (output[key] = value));
-
-					return output;
-				})
-		);
+		return output;
 	}
 
 	/**
 	 * Update the properties for this node
 	 *
-	 * @param {Object} properties  New properties
-	 * @return {Node}
+	 * @param properties  New properties
 	 */
-	update(properties) {
+	public async update(properties: Partial<T>): Promise<this> {
 		// TODO: Temporary fix, add the properties to the properties map
 		// Sorry, but it's easier than hacking the validator
-		this._model.properties().forEach((property) => {
-			const name = property.name();
+		for (const property of this._model.properties.values()) {
+			const name = property.name;
 
-			if (property.required() && !properties.hasOwnProperty(name)) {
+			if (property.required && !hasOwn(properties, name)) {
+				// @ts-ignore
 				properties[name] = this._properties.get(name);
 			}
-		});
+		}
 
-		return UpdateNode(this._neode, this._model, this._identity, properties)
-			.then((properties) => {
-				properties.map(({ key, value }) => {
-					this._properties.set(key, value);
-				});
-			})
-			.then(() => {
-				return this;
-			});
+		const updatedProperties = await UpdateNode(
+			this._neode,
+			this._model,
+			this._identity,
+			properties,
+		);
+
+		for (const [key, value] of Object.entries(updatedProperties)) {
+			this._properties.set(key, value);
+		}
+
+		return this;
 	}
 }

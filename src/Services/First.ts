@@ -1,30 +1,60 @@
-import Builder, { mode } from "../Query/Builder.js";
+import type { Model } from "../Model.js";
+import type { Neode } from "../Neode.js";
+import type { Node } from "../Node.js";
+import { Builder, QueryMode } from "../Query/Builder.js";
 import { eagerNode } from "../Query/EagerUtils.js";
 
-export function First(neode, model, key, value) {
+export function First<T extends Record<string, unknown>>(
+	neode: Neode,
+	model: Model<T> | string,
+	key: keyof T & string,
+	value: unknown,
+): Promise<Node<T> | undefined>;
+
+export function First<T extends Record<string, unknown>>(
+	neode: Neode,
+	model: Model<T> | string,
+	properties: Partial<T>,
+): Promise<Node<T> | undefined>;
+
+export async function First<T extends Record<string, unknown>>(
+	neode: Neode,
+	model: Model<T> | string,
+	keyOrObject: (keyof T & string) | Partial<T>,
+	value?: unknown,
+): Promise<Node<T> | undefined>;
+
+export async function First<T extends Record<string, unknown>>(
+	neode: Neode,
+	model: Model<T> | string,
+	keyOrObject: (keyof T & string) | Partial<T>,
+	value?: unknown,
+): Promise<Node<T> | undefined> {
 	const alias = "this";
 
 	const builder = new Builder(neode);
+	const modelObj = typeof model === "string" ? neode.model<T>(model) : model;
 
 	// Match
-	builder.match(alias, model);
+	builder.match(alias, modelObj);
 
 	// Where
-	if (typeof key == "object") {
+	if (typeof keyOrObject === "object") {
 		// Process a map of properties
-		Object.keys(key).forEach((property) => {
-			builder.where(`${alias}.${property}`, key[property]);
-		});
+		for (const [key, value] of Object.entries(keyOrObject)) {
+			builder.where(`${alias}.${key}`, value);
+		}
 	} else {
 		// Straight key/value lookup
-		builder.where(`${alias}.${key}`, value);
+		builder.where(`${alias}.${keyOrObject}`, value);
 	}
 
-	const output = eagerNode(neode, 1, alias, model);
+	const output = eagerNode(neode, 1, alias, modelObj);
 
-	return builder
+	const result = await builder
 		.return(output)
 		.limit(1)
-		.execute(mode.READ)
-		.then((res) => neode.hydrateFirst(res, alias, model));
+		.execute(QueryMode.READ);
+
+	return neode.hydrateFirst(result, alias, model);
 }

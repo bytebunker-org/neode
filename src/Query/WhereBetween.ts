@@ -14,8 +14,8 @@ export class WhereBetween {
 	}
 
 	public toString(): string {
-		const negative = this._negative ? "NOT " : "";
+		const negative = this.negative ? "NOT " : "";
 
-		return `${negative}$${this._floor} <= ${this._alias} <= $${this._ceiling}`;
+		return `${negative}$${this.floorParam} <= ${this.alias} <= $${this.ceilingParam}`;
 	}
 }

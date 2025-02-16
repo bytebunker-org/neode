@@ -1,7 +1,14 @@
-export function DetachFrom(neode, from, to) {
+import type { QueryResult } from "neo4j-driver";
+import type { Neode } from "../Neode.js";
+import type { Node } from "../Node.js";
+
+export function DetachFrom<
+	T extends Record<string, unknown>,
+	U extends Record<string, unknown>,
+>(neode: Neode, from: Node<T>, to: Node<U>): Promise<QueryResult> {
 	const params = {
-		from_id: from.identity(),
-		to_id: to.identity(),
+		from_id: from.identity,
+		to_id: to.identity,
 	};
 
 	const query = `
@@ -11,5 +18,5 @@ export function DetachFrom(neode, from, to) {
         DELETE rel
     `;
 
-	return neode.writeCypher(query, params).then(() => [from, to]);
+	return neode.writeCypher(query, params);
 }

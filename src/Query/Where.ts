@@ -7,13 +7,13 @@ export class Where {
 		private readonly right: string,
 	) {}
 
-	setNegative(): this {
+	public setNegative(): this {
 		this.negative = true;
 
 		return this;
 	}
 
-	toString() {
+	public toString(): string {
 		const negative = this.negative ? "NOT " : "";
 
 		return `${negative}${this.left} ${this.operator} ${this.right}`;

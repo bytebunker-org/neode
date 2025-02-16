@@ -1,4 +1,5 @@
 import type Joi from "joi";
+import type { Integer } from "neo4j-driver";
 import type {
 	RelationshipCascadePolicyEnum,
 	RelationshipDirectionEnum,
@@ -236,9 +237,35 @@ export type QueryParams = Record<string, unknown>;
 
 export type EntityPropertyMap<T extends Record<string, unknown>> =
 	T extends Record<infer K, infer V> ? Map<K, V> : never;
+export type EntityPropertyMapIterator<T extends Record<string, unknown>> =
+	T extends Record<infer K, infer V> ? MapIterator<[K, V]> : never;
 
-export type SerializedGraph = Record<string, unknown> & {
+export interface SerializedGraph {
 	_id: number;
 	_labels?: string[];
 	type?: string;
-};
+
+	[x: string]: unknown;
+}
+
+export type Integerable =
+	| number
+	| string
+	| Integer
+	| {
+			low: number;
+			high: number;
+	  }
+	| bigint;
+
+export type PointObject =
+	| {
+			x: number;
+			y: number;
+			z?: number;
+	  }
+	| {
+			latitude: number;
+			longitude: number;
+			height?: number;
+	  };

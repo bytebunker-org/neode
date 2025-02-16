@@ -1,75 +1,93 @@
-import Builder, { mode } from "../Query/Builder.js";
+import type { Model } from "../Model.js";
+import type { Neode } from "../Neode.js";
+import type { NodeCollection } from "../NodeCollection.js";
+import { Builder, QueryMode } from "../Query/Builder.js";
 import { eagerNode } from "../Query/EagerUtils.js";
+import { OrderDirectionEnum } from "../Query/Order.js";
+import type { PointObject } from "../types.js";
+import { hasOwn } from "../util/util.js";
 
-export function FindWithinDistance(
-	neode,
-	model,
-	location_property,
-	point,
-	distance,
-	properties,
-	order,
-	limit,
-	skip,
-) {
+export async function FindWithinDistance<
+	T extends Record<string, unknown> = Record<string, unknown>,
+>(
+	neode: Neode,
+	model: Model<T>,
+	locationProperty: string,
+	point: PointObject,
+	distance: number,
+	properties: Partial<T> = {},
+	order?: string | Record<string, OrderDirectionEnum>,
+	limit?: number,
+	skip?: number,
+): Promise<NodeCollection<T>> {
 	const alias = "this";
 
 	const builder = new Builder(neode);
 
 	// Match
-	builder.match(alias, model);
+	builder.match<T>(alias, model);
 
 	// Where
-	if (properties) {
-		Object.keys(properties).forEach((key) => {
-			builder.where(`${alias}.${key}`, properties[key]);
-		});
+	for (const [key, value] of Object.entries(properties)) {
+		builder.where(`${alias}.${key}`, value);
 	}
+
+	const prefixedProperties: Record<string, unknown> = {};
 
 	// Prefix key on Properties
 	if (properties) {
-		Object.keys(properties).forEach((key) => {
-			properties[`${alias}.${key}`] = properties[key];
-
-			delete properties[key];
-		});
+		for (const [key, value] of Object.entries(properties)) {
+			prefixedProperties[`${alias}.${key}`] = value;
+		}
 	}
 
 	// Distance from Point
 	// TODO: When properties are passed match them as well .where(properties);
-	let pointString = isNaN(point.x)
-		? `latitude:${point.latitude}, longitude:${point.longitude}`
-		: `x:${point.x}, y:${point.y}`;
-	if (!isNaN(point.z)) {
-		pointString += `, z:${point.z}`;
-	}
+	let pointString: string | undefined;
 
-	if (!isNaN(point.height)) {
-		pointString += `, height:${point.height}`;
+	if (hasOwn(point, "latitude") && hasOwn(point, "longitude")) {
+		pointString = `latitude:${point.latitude}, longitude:${point.longitude}`;
+
+		if (hasOwn(point, "height")) {
+			pointString += `, height:${point.height}`;
+		}
+	} else if (hasOwn(point, "x") && hasOwn(point, "y")) {
+		pointString = `x:${point.x}, y:${point.y}`;
+
+		if (hasOwn(point, "z")) {
+			pointString += `, z:${point.z}`;
+		}
 	}
 
 	builder.whereRaw(
-		`distance (this.${location_property}, point({${pointString}})) <= ${distance}`,
+		`distance (${alias}.${locationProperty}, point({${pointString}})) <= ${distance}`,
 	);
 
 	// Order
-	if (typeof order == "string") {
-		order = `${alias}.${order}`;
-	} else if (typeof order == "object") {
-		Object.keys(order).forEach((key) => {
-			builder.orderBy(`${alias}.${key}`, order[key]);
-		});
+	if (typeof order === "string") {
+		builder.orderBy(`${alias}.${order}`, OrderDirectionEnum.ASC);
+	} else if (typeof order === "object") {
+		const prefixedOrderByArgs: Record<string, OrderDirectionEnum> = {};
+
+		for (const [key, direction] of Object.entries(order)) {
+			prefixedOrderByArgs[`${alias}.${key}`] = direction;
+		}
+
+		builder.orderBy(prefixedOrderByArgs);
+	}
+
+	if (skip) {
+		builder.skip(skip);
+	}
+
+	if (limit) {
+		builder.limit(limit);
 	}
 
 	// Output
 	const output = eagerNode(neode, 1, alias, model);
 
-	// Complete Query
-	return builder
-		.orderBy(order)
-		.skip(skip)
-		.limit(limit)
-		.return(output)
-		.execute(mode.READ)
-		.then((res) => neode.hydrate(res, alias));
+	const result = await builder.return(output).execute(QueryMode.READ);
+
+	return neode.hydrate(result, alias);
 }

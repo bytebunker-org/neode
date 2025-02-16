@@ -69,6 +69,10 @@ export class Neode {
 		return this._enterprise;
 	}
 
+	public get models(): ModelMap {
+		return this._models;
+	}
+
 	/**
 	 * @static
 	 * Generate Neode instance using .env configuration
@@ -131,19 +135,6 @@ export class Neode {
 	}
 
 	/**
-	 * Define multiple models
-	 *
-	 * @param models Map of models with their schema.  ie {Movie: {...}}
-	 */
-	public with(models: Record<string, SchemaObject>): this {
-		for (const [modelName, model] of Object.entries(models)) {
-			this.model(modelName, model);
-		}
-
-		return this;
-	}
-
-	/**
 	 * Scan a directory for Models
 	 *
 	 * @param directory Directory to scan
@@ -170,6 +161,19 @@ export class Neode {
 
 		return this;
 	}*/
+
+	/**
+	 * Define multiple models
+	 *
+	 * @param models Map of models with their schema.  ie {Movie: {...}}
+	 */
+	public with(models: Record<string, SchemaObject>): this {
+		for (const [modelName, model] of Object.entries(models)) {
+			this.model(modelName, model);
+		}
+
+		return this;
+	}
 
 	/**
 	 * Set the default database for all future connections
@@ -214,10 +218,6 @@ export class Neode {
 		return this._models.get(name)! as Model<T>;
 	}
 
-	public get models(): ModelMap {
-		return this._models;
-	}
-
 	/**
 	 * Extend a model with extra configuration
 	 *
@@ -248,7 +248,7 @@ export class Neode {
 	 */
 	public merge<T extends Record<string, unknown>>(
 		model: string,
-		properties: Record<string, unknown>,
+		properties: Partial<T>,
 	): Promise<Node<T>> {
 		return this.model<T>(model).merge(properties);
 	}
@@ -505,7 +505,7 @@ export class Neode {
 	public hydrate<T extends Record<string, unknown>>(
 		result: QueryResult,
 		alias: string,
-		definition?: Model<T>,
+		definition?: Model<T> | string,
 	): NodeCollection<T> {
 		return this.factory.hydrate(result, alias, definition);
 	}
@@ -513,10 +513,15 @@ export class Neode {
 	/**
 	 * Hydrate the first record in a result set
 	 *
-	 * @param result    Neo4j Result
-	 * @param alias  Alias of Node to pluck
+	 * @param result Neo4j Result
+	 * @param alias Alias of Node to pluck
+	 * @param definition Expected schema of the node
 	 */
-	hydrateFirst(result: QueryResult, alias: string, definition) {
+	hydrateFirst<T extends Record<string, unknown>>(
+		result: QueryResult,
+		alias: string,
+		definition?: Model<T> | string,
+	) {
 		return this.factory.hydrateFirst(result, alias, definition);
 	}
 

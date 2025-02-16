@@ -5,7 +5,7 @@ export class Return {
 		private readonly as: string,
 	) {}
 
-	toString() {
+	public toString(): string {
 		let output = this.alias;
 
 		if (this.as) {
