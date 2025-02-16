@@ -1,32 +1,31 @@
-import type { Session } from "neo4j-driver";
+import type { QueryResult, Session } from "neo4j-driver";
 import type { Neode } from "./Neode.js";
 
 function UniqueConstraintCypher(
 	label: string,
 	property: string,
-	mode = "CREATE",
+	mode: "CREATE" | "DROP" = "CREATE",
 ): string {
-	return `${mode} CONSTRAINT ON (model:${label}) ASSERT model.${property} IS UNIQUE`;
+	return `${mode} CONSTRAINT FOR (model:${label}) REQUIRE model.${property} IS UNIQUE`;
 }
 
 function ExistsConstraintCypher(
 	label: string,
 	property: string,
-	mode = "CREATE",
+	mode: "CREATE" | "DROP" = "CREATE",
 ): string {
-	return `${mode} CONSTRAINT ON (model:${label}) ASSERT EXISTS(model.${property})`;
+	return `${mode} CONSTRAINT FOR (model:${label}) REQUIRE EXISTS(model.${property})`;
 }
 
-function IndexCypher(label: string, property: string, mode = "CREATE") {
-	return `${mode} INDEX ON :${label}(${property})`;
+function IndexCypher(
+	label: string,
+	property: string,
+	mode: "CREATE" | "DROP" = "CREATE",
+): string {
+	return `${mode} INDEX FOR :${label}(${property})`;
 }
 
-async function runAsync(
-	session: Session,
-	queries: string[],
-): Promise<void> {
-	const next = queries.pop();
-
+async function runAsync(session: Session, queries: string[]): Promise<void> {
 	try {
 		for (const query of queries) {
 			await session.run(query);
@@ -36,71 +35,66 @@ async function runAsync(
 	}
 }
 
-function InstallSchema(neode: Neode) {
+function InstallSchema(neode: Neode): Promise<QueryResult[]> {
 	const queries: string[] = [];
 
-	neode.models.forEach((model, label) => {
-		model.properties().forEach((property) => {
+	for (const [label, model] of neode.models.entries()) {
+		for (const property of model.properties.values()) {
 			// Constraints
-			if (property.primary() || property.unique()) {
-				queries.push(UniqueConstraintCypher(label, property.name()));
+			if (property.primary || property.unique) {
+				queries.push(UniqueConstraintCypher(label, property.name));
 			}
 
-			if (neode.enterprise() && property.required()) {
-				queries.push(ExistsConstraintCypher(label, property.name()));
+			if (neode.enterprise && property.required) {
+				queries.push(ExistsConstraintCypher(label, property.name));
 			}
 
 			// Indexes
-			if (property.indexed()) {
-				queries.push(IndexCypher(label, property.name()));
+			if (property.indexed) {
+				queries.push(IndexCypher(label, property.name));
 			}
-		});
-	});
+		}
+	}
 
 	return neode.batch(queries);
 }
 
-function DropSchema(neode) {
+async function DropSchema(neode: Neode): Promise<void> {
 	const queries: string[] = [];
 
-
-	neode.models.forEach((model, label) => {
-		model.properties().forEach((property) => {
+	for (const [label, model] of neode.models.entries()) {
+		for (const property of model.properties.values()) {
 			// Constraints
-			if (property.unique()) {
+			if (property.unique) {
 				queries.push(
-					UniqueConstraintCypher(label, property.name(), "DROP"),
+					UniqueConstraintCypher(label, property.name, "DROP"),
 				);
 			}
 
-			if (neode.enterprise() && property.required()) {
+			if (neode.enterprise && property.required) {
 				queries.push(
-					ExistsConstraintCypher(label, property.name(), "DROP"),
+					ExistsConstraintCypher(label, property.name, "DROP"),
 				);
 			}
 
 			// Indexes
-			if (property.indexed()) {
-				queries.push(IndexCypher(label, property.name(), "DROP"));
+			if (property.indexed) {
+				queries.push(IndexCypher(label, property.name, "DROP"));
 			}
-		});
-	});
+		}
+	}
 
-	const session = neode.writeSession();
-
-	await runAsync(session, queries);
+	await runAsync(neode.writeSession(), queries);
 }
 
 export class Schema {
-	constructor(neode) {
-		this.neode = neode;
-	}
+	constructor(private readonly neode: Neode) {}
 
-	install() {
+	public install(): Promise<QueryResult[]> {
 		return InstallSchema(this.neode);
 	}
 
-	drop() {
+	public drop(): Promise<void> {
 		return DropSchema(this.neode);
 	}
 }
