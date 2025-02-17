@@ -276,7 +276,7 @@ describe("Factory", () => {
 			expect(node.get("nodes")).to.be.an.instanceOf(NodeCollection);
 			expect(node.get("nodes").first().get("id").toNumber()).to.equal(7);
 
-			const json = relationship.toJson();
+			const json = relationship.toJSON();
 
 			expect(json).to.deep.include({
 				_type: "RELATIONSHIP",

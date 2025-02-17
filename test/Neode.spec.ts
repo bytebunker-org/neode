@@ -158,7 +158,7 @@ describe("Neode", () => {
 
 			expect(res?.get("unknown", "default")).toEqual("default");
 
-			const json = res?.toJson();
+			const json = res?.toJSON();
 			expect(json?.["name"]).toEqual(create_data.name);
 		});
 	});

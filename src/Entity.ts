@@ -151,7 +151,7 @@ export abstract class Entity<T extends Record<string, unknown>> {
 		return fallback;
 	}
 
-	public abstract toJson(): Record<string, unknown>;
+	public abstract toJSON(): Record<string, unknown>;
 
 	/**
 	 * Convert a raw property into a JSON friendly format

@@ -34,9 +34,9 @@ export class RelationshipCollection<
 	}
 
 	/**
-	 * Map the 'toJson' function on all values
+	 * Map the 'toJSON' function on all values
 	 */
-	public toJson(): SerializedGraph[] {
-		return this.map((r) => r.toJson());
+	public toJSON(): SerializedGraph[] {
+		return this.map((r) => r.toJSON());
 	}
 }

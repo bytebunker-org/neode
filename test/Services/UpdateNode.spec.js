@@ -63,7 +63,7 @@ describe("UpdateNode", () => {
 					expect(res.get(key)).to.equal(updates[key]);
 				});
 
-				return res.toJson();
+				return res.toJSON();
 			})
 			.then((json) => {
 				Object.keys(updates).map((key) => {

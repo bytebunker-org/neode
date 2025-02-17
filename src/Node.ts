@@ -173,7 +173,7 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 	/**
 	 * Convert Node to a JSON friendly Object
 	 */
-	public override toJson(): SerializedGraph {
+	public override toJSON(): SerializedGraph {
 		const output: SerializedGraph = {
 			_id: this.id,
 			_labels: this.labels,
@@ -232,9 +232,9 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 			const name = eagerRelationship.name;
 
 			if (this._eager.has(name)) {
-				// Call internal toJson function on either a Node, NodeCollection, Relationship or RelationshipCollection
+				// Call internal toJSON function on either a Node, NodeCollection, Relationship or RelationshipCollection
 
-				const eagerValue = this._eager.get(name)!.toJson();
+				const eagerValue = this._eager.get(name)!.toJSON();
 
 				if (
 					(Array.isArray(eagerValue) && eagerValue.length) ||

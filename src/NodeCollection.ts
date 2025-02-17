@@ -32,9 +32,9 @@ export class NodeCollection<T extends Record<string, unknown>> extends Array<
 	}
 
 	/**
-	 * Map the 'toJson' function on all values
+	 * Map the 'toJSON' function on all values
 	 */
-	public toJson(): SerializedGraph[] {
-		return this.map((n) => n.toJson());
+	public toJSON(): SerializedGraph[] {
+		return this.map((n) => n.toJSON());
 	}
 }

@@ -608,7 +608,7 @@ describe("Services/MergeOn.js", () => {
 
 						expect(what.length).to.equal(3);
 
-						return what.toJson().then((json) => {
+						return what.toJSON().then((json) => {
 							const since = json.map((row) => row.since);
 
 							expect(since).to.contain(100);

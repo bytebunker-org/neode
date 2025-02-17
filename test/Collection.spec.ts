@@ -53,11 +53,11 @@ describe("NodeCollection", () => {
 		});
 	});
 
-	describe("::toJson", () => {
+	describe("::toJSONtoJSON", () => {
 		class TestItem {
 			constructor(private readonly value: number) {}
 
-			toJson() {
+			toJSON() {
 				return this.value;
 			}
 		}
@@ -69,8 +69,8 @@ describe("NodeCollection", () => {
 			new TestItem(4),
 		]);
 
-		it("should run the toJson() function to all values", async () => {
-			expect(jsonTest.toJson()).to.deep.equal([1, 2, 3, 4]);
+		it("should run the toJSON() function to all values", async () => {
+			expect(jsonTest.toJSON()).to.deep.equal([1, 2, 3, 4]);
 		});
 	});
 });

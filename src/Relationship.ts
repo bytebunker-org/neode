@@ -130,7 +130,7 @@ export class Relationship<
 	/**
 	 * Convert Relationship to a JSON friendly Object
 	 */
-	public override toJson(): SerializedGraph {
+	public override toJSON(): SerializedGraph {
 		const output: SerializedGraph = {
 			_id: this.id,
 			_type: this.type,
@@ -153,7 +153,7 @@ export class Relationship<
 		}
 
 		// Get Other Node
-		output[definition.nodeAlias] = this.otherNode.toJson();
+		output[definition.nodeAlias] = this.otherNode.toJSON();
 
 		return output;
 	}
