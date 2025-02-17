@@ -15,7 +15,12 @@
 		"test:watch": "vitest",
 		"test:watch-ui": "vitest --ui"
 	},
-	"keywords": ["neo4j", "graph", "cypher", "ogm"],
+	"keywords": [
+		"neo4j",
+		"graph",
+		"cypher",
+		"ogm"
+	],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/adam-cowley/neode.git"
@@ -23,8 +28,10 @@
 	"author": "Adam Cowley <github@adamcowley.co.uk>",
 	"license": "MIT",
 	"dependencies": {
+		"debug": "^4.4.0",
 		"dotenv": "^16.4.7",
 		"joi": "^17.13.3",
+		"serialize-error": "^12.0.0",
 		"uuid": "^11.0.5"
 	},
 	"devDependencies": {
@@ -34,6 +41,7 @@
 		"@babel/preset-env": "^7.9.6",
 		"@babel/register": "^7.8.6",
 		"@biomejs/biome": "1.9.4",
+		"@types/debug": "^4.1.12",
 		"@types/node": "^22.13.4",
 		"@types/uuid": "^10.0.0",
 		"@vitest/coverage-v8": "^3.0.5",

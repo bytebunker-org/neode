@@ -788,7 +788,8 @@ export class Builder {
 
 		const query = this._statements
 			.map((statement) => statement.toString())
-			.join("\n");
+			.join("\n")
+			.replace(/\n+/g, "\n");
 
 		return {
 			query,
@@ -804,22 +805,32 @@ export class Builder {
 
 		let session: Session | undefined;
 
-		console.info(
-			`:\n=== Executing ${queryMode} builder query ===\n${query}\n=== Params ===\n${JSON.stringify(params)}\n`,
-		);
+		this._neode.logger.logQuery(query, params);
 
 		try {
 			if (queryMode === QueryMode.WRITE) {
 				session = this._neode.writeSession();
 
-				return await session.executeWrite((tx) =>
+				const result = await session.executeWrite((tx) =>
 					tx.run(query, params),
 				);
+				this._neode.logger.logQueryResult(result);
+
+				return result;
 			} else {
 				session = this._neode.readSession();
 
-				return await session.executeRead((tx) => tx.run(query, params));
+				const result = await session.executeRead((tx) =>
+					tx.run(query, params),
+				);
+				this._neode.logger.logQueryResult(result);
+
+				return result;
 			}
+		} catch (error) {
+			this._neode.logger.logQueryError(query, params, error as Error);
+
+			throw error;
 		} finally {
 			session?.close();
 		}

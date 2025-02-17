@@ -15,6 +15,8 @@ import { Builder, QueryMode } from "./Query/Builder.js";
 import type { OrderDirectionEnum } from "./Query/Order.js";
 import type { Relationship } from "./Relationship.js";
 import { Schema } from "./Schema.js";
+import type { Logger, LoggerOptions } from "./logger/Logger.js";
+import { createLogger } from "./logger/LoggerFactory.js";
 import type { Query, QueryParams, SchemaObject } from "./types.js";
 import { QueryError } from "./util/QueryError.js";
 import { TransactionError } from "./util/TransactionError.js";
@@ -26,6 +28,8 @@ interface NeodeOptions {
 	enterprise: boolean;
 	database?: string;
 	driverConfig?: Record<string, unknown>;
+
+	logging?: LoggerOptions;
 }
 
 export class Neode {
@@ -35,6 +39,8 @@ export class Neode {
 	private factory: Factory;
 	private database?: string;
 	private _enterprise: boolean;
+
+	private _logger!: Logger;
 
 	constructor(options: NeodeOptions) {
 		const auth =
@@ -55,6 +61,8 @@ export class Neode {
 
 		this._enterprise = options.enterprise;
 		this.setEnterprise(options.enterprise);
+
+		this.setLogger(options.logging);
 	}
 
 	public get schema(): Schema {
@@ -74,6 +82,10 @@ export class Neode {
 
 	public get models(): ModelMap {
 		return this._models;
+	}
+
+	public get logger(): Logger {
+		return this._logger;
 	}
 
 	/**
@@ -135,6 +147,10 @@ export class Neode {
 			database,
 			driverConfig,
 		});
+	}
+
+	public setLogger(loggingOptions: LoggerOptions | undefined): void {
+		this._logger = createLogger(loggingOptions);
 	}
 
 	/**
@@ -325,25 +341,31 @@ export class Neode {
 	/**
 	 * Run an explicitly defined Read query
 	 */
-	public readCypher<R extends RecordShape = RecordShape>(
+	public async readCypher<R extends RecordShape = RecordShape>(
 		query: Query,
 		params: QueryParams = {},
 	): Promise<QueryResult<R>> {
 		const session = this.readSession();
 
-		return this.cypher(query, params, session);
+		const result = await this.cypher(query, params, session);
+		this.logger.logQueryResult(result);
+
+		return result;
 	}
 
 	/**
 	 * Run an explicitly defined Write query
 	 */
-	public writeCypher<R extends RecordShape = RecordShape>(
+	public async writeCypher<R extends RecordShape = RecordShape>(
 		query: Query,
 		params: QueryParams = {},
 	): Promise<QueryResult<R>> {
 		const session = this.writeSession();
 
-		return this.cypher(query, params, session);
+		const result = await this.cypher(query, params, session);
+		this.logger.logQueryResult(result);
+
+		return result;
 	}
 
 	/**
@@ -357,13 +379,14 @@ export class Neode {
 		// If single run, open a new session
 		const session = runInSession ?? this.session();
 		try {
-			console.info(
-				`\n=== Executing raw query ===\n${typeof query === "string" ? query : query.text}\n=== Params ===\n${typeof query === "object" ? query.parameters : JSON.stringify(params)}\n`,
-			);
+			this.logger.logQuery(query, params);
 
-			return await session.run(query, params);
+			const result = await session.run(query, params);
+			this.logger.logQueryResult(result);
+
+			return result;
 		} catch (error) {
-			console.error("Query error", error);
+			this.logger.logQueryError(query, params, error as Error);
 
 			throw new QueryError(
 				typeof query === "string" ? query : query.text,
@@ -449,13 +472,32 @@ export class Neode {
 				.map((r) => r.reason);
 
 			if (errorResults.length > 0) {
-				console.error("Transaction error", errorResults);
+				for (let i = 0; i < results.length; i++) {
+					const result = results[i];
+
+					if (result.status !== "rejected") {
+						continue;
+					}
+
+					this.logger.logQueryError(
+						queries[i],
+						undefined,
+						result.reason as Error,
+					);
+				}
+
 				throw new TransactionError(errorResults);
 			}
 
-			return results
+			const successfulResults = results
 				.filter((r) => r.status === "fulfilled")
 				.map((r) => r.value);
+
+			for (const result of successfulResults.slice(5)) {
+				this.logger.logQueryResult(result);
+			}
+
+			return successfulResults;
 		});
 	}
 

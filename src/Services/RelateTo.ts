@@ -75,7 +75,6 @@ export async function RelateTo<
 	}>(query, params);
 
 	const relation = result.records[0].get("rel");
-	console.log("relation", relation);
 	const hydrateFrom = (
 		relationship.direction === RelationshipDirectionEnum.IN ? to : from
 	) as Node<S | E>;
