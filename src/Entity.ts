@@ -98,7 +98,7 @@ export abstract class Entity<T extends Record<string, unknown>> {
 	 *
 	 * @return {Object}
 	 */
-	public properties(): T {
+	public get properties(): T {
 		const output = {} as T;
 
 		const propertyIterator = this.model.properties.entries() as MapIterator<
@@ -122,16 +122,21 @@ export abstract class Entity<T extends Record<string, unknown>> {
 	 *
 	 * @param property Name of property
 	 */
-	get<K extends keyof T & string>(property: K): T[K] | undefined;
+	public get<K extends keyof T & string>(
+		property: K | string,
+	): T[K] | undefined;
 	/**
 	 * Get a property for this node
 	 *
 	 * @param property Name of property
 	 * @param fallback  Default value to supply if none exists
 	 */
-	get<K extends keyof T & string>(property: K, fallback: T[K]): T[K];
-	get<K extends keyof T & string>(
-		property: K,
+	public get<K extends keyof T & string>(
+		property: K | string,
+		fallback: T[K],
+	): T[K];
+	public get<K extends keyof T & string>(
+		property: K | string,
 		fallback?: T[K],
 	): T[K] | undefined {
 		// If property is set, return that

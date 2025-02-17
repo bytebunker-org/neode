@@ -22,7 +22,7 @@ function IndexCypher(
 	property: string,
 	mode: "CREATE" | "DROP" = "CREATE",
 ): string {
-	return `${mode} INDEX FOR :${label}(${property})`;
+	return `${mode} INDEX FOR (model:${label}) ON (model.${property})`;
 }
 
 async function runAsync(session: Session, queries: string[]): Promise<void> {

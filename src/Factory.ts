@@ -13,7 +13,7 @@ import {
 import type { EntityPropertyMap } from "./types.js";
 import { hasOwn } from "./util/util.js";
 
-interface HydratedDataRecord extends Record<string, unknown> {
+interface RawDataRecord extends Record<string, unknown> {
 	[EAGER_ID]: neo4j.Integer;
 	[EAGER_LABELS]?: string[];
 	[EAGER_TYPE]?: string;
@@ -29,16 +29,16 @@ export class Factory {
 	 * @param alias Alias of Node to pluck
 	 * @param definition
 	 */
-	hydrateFirst<T extends Record<string, unknown>>(
+	public hydrateFirst<T extends Record<string, unknown>>(
 		result: QueryResult | undefined,
 		alias: string,
 		definition?: Model<T> | string,
 	): Node<T> | undefined {
-		const firstResult: Record<string, unknown> | undefined =
+		const firstResult: RawDataRecord | undefined =
 			result?.records?.[0]?.get(alias);
 
 		if (!firstResult) {
-			return;
+			return undefined;
 		}
 
 		return this.hydrateNode(firstResult, definition);
@@ -82,34 +82,19 @@ export class Factory {
 	 * Take a result object and convert it into a Model
 	 */
 	private hydrateNode<T extends Record<string, unknown>>(
-		record: Record<string, unknown>,
+		record: RawDataRecord,
 		definitionOrString?: Model<T> | string,
 	): Node<T> {
-		if (!hasOwn(record, "identity") || !neo4j.isInt(record.identity)) {
+		if (!hasOwn(record, EAGER_ID) || !neo4j.isInt(record[EAGER_ID])) {
 			throw new Error(
-				`No node identity found in record ${JSON.stringify(record)}`,
+				`No node identity found in record ${JSON.stringify(record, null, 2)}`,
 			);
 		}
 
-		const identity = record.identity as neo4j.Integer;
-
-		let hydratedData: HydratedDataRecord = {
-			...(record["properties"] && typeof record["properties"] === "object"
-				? record["properties"]
-				: {}),
-			[EAGER_ID]: identity,
-		};
-
-		// TODO: Are labels also required?
-		if (hasOwn(record, "labels") && Array.isArray(record.labels)) {
-			hydratedData = {
-				...hydratedData,
-				[EAGER_LABELS]: record.labels as string[],
-			};
-		}
+		const identity = record[EAGER_ID] as neo4j.Integer;
 
 		// Get Internals
-		const labels = hydratedData[EAGER_LABELS];
+		const labels = record[EAGER_LABELS];
 
 		let definition: Model<T> | undefined;
 
@@ -132,8 +117,8 @@ export class Factory {
 		const properties = new Map() as EntityPropertyMap<T>;
 
 		for (const key of definition.properties.keys()) {
-			if (hasOwn(hydratedData, key)) {
-				properties.set(key, hydratedData[key]);
+			if (hasOwn(record, key)) {
+				properties.set(key, record[key]);
 			}
 		}
 
@@ -150,7 +135,6 @@ export class Factory {
 		for (const eager of definition.eager) {
 			const name = eager.name;
 
-			// TODO: Are the eagerly loaded props on hydratedData (so in record.properties) or actually in record?
 			if (!record[name]) {
 				throw new Error(
 					`Could not find eager property ${name} on ${JSON.stringify(record)}`,
@@ -160,21 +144,22 @@ export class Factory {
 			if (eager.type === "node") {
 				node.setEager(
 					name,
-					this.hydrateNode(record[name] as Record<string, unknown>),
+					this.hydrateNode(record[name] as RawDataRecord),
 				);
 			} else if (eager.type === "nodes") {
 				node.setEager(
 					name,
 					new NodeCollection(
 						this.neode,
-						(record[name] as Record<string, unknown>[]).map(
-							(value) => this.hydrateNode(value),
+						(record[name] as RawDataRecord[]).map((value) =>
+							this.hydrateNode(value),
 						),
 					),
 				);
 			} else if (eager.type === "relationship") {
 				node.setEager(
 					name,
+					// @ts-ignore - TODO: Does this even work, are the EAGER_ keys present on the object
 					this.hydrateRelationship(eager, record[name], node),
 				);
 			} else if (eager.type === "relationships") {
@@ -184,6 +169,7 @@ export class Factory {
 						this.neode,
 						(record[name] as Record<string, unknown>[]).map(
 							(value) =>
+								// @ts-ignore
 								this.hydrateRelationship(eager, value, node),
 						),
 					),
@@ -208,7 +194,7 @@ export class Factory {
 		E extends Record<string, unknown>,
 	>(
 		definition: RelationshipType<T>,
-		record: HydratedDataRecord,
+		record: RawDataRecord,
 		thisNode: Node<S>,
 	): Relationship<T, S | E, S | E> {
 		// Get Internals
@@ -229,7 +215,7 @@ export class Factory {
 
 		// Start & End Nodes
 		const otherNode = this.hydrateNode<E>(
-			record[definition.nodeAlias] as E,
+			record[definition.nodeAlias] as RawDataRecord,
 		);
 
 		// Calculate Start & End Nodes

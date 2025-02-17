@@ -183,7 +183,7 @@ export interface BaseRelationshipNodeProperties
 	 * Relationship attached properties
 	 */
 	properties?: {
-		[index: string]: PropertyTypes;
+		[index: string]: NodeProperty;
 	};
 }
 
@@ -196,18 +196,10 @@ export interface NodeNodeProperties extends BaseRelationshipNodeProperties {
 	type: "node" | "nodes";
 }
 
-export interface OtherNodeProperties extends BaseNodeProperties<unknown> {
+export interface OtherNodeProperties<T = unknown>
+	extends BaseNodeProperties<T> {
 	type: GenericPropertyTypes;
 }
-
-export type NodeProperty =
-	| PropertyTypes
-	| NumberNodeProperties
-	| FloatNodeProperties
-	| RelationshipNodeProperties
-	| NodeNodeProperties
-	| StringNodeProperties
-	| OtherNodeProperties;
 
 export type NodePropertyObject =
 	| NumberNodeProperties
@@ -217,28 +209,27 @@ export type NodePropertyObject =
 	| StringNodeProperties
 	| OtherNodeProperties;
 
+export type NodeProperty = PropertyTypes | NodePropertyObject;
+
 export type RelationshipLikePropertyObject =
 	| RelationshipNodeProperties
 	| NodeNodeProperties;
 
-export type SchemaObject = {
+export interface SchemaObject {
+	[index: string]: NodeProperty | string[] | undefined;
+
 	labels?: string[];
-} & {
-	[index: string]: NodeProperty;
-};
+}
 
 export type RelationshipSchema = {
 	[index: string]: BaseRelationshipNodeProperties;
 };
 
-export type Query = string | { text: string; parameters?: QueryParams };
-
 export type QueryParams = Record<string, unknown>;
+export type Query = string | { text: string; parameters?: QueryParams };
 
 export type EntityPropertyMap<T extends Record<string, unknown>> =
 	T extends Record<infer K, infer V> ? Map<K, V> : never;
-export type EntityPropertyMapIterator<T extends Record<string, unknown>> =
-	T extends Record<infer K, infer V> ? MapIterator<[K, V]> : never;
 
 export interface SerializedGraph {
 	_id: number;

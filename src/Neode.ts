@@ -2,6 +2,7 @@ import { config as dotenvConfig } from "dotenv";
 import neo4j, {
 	type Driver,
 	type QueryResult,
+	type RecordShape,
 	type Session,
 	type Transaction,
 } from "neo4j-driver";
@@ -11,18 +12,20 @@ import { ModelMap } from "./ModelMap.js";
 import type { Node } from "./Node.js";
 import { NodeCollection } from "./NodeCollection.js";
 import { Builder, QueryMode } from "./Query/Builder.js";
+import type { OrderDirectionEnum } from "./Query/Order.js";
+import type { Relationship } from "./Relationship.js";
 import { Schema } from "./Schema.js";
 import type { Query, QueryParams, SchemaObject } from "./types.js";
 import { QueryError } from "./util/QueryError.js";
 import { TransactionError } from "./util/TransactionError.js";
 
 interface NeodeOptions {
-	connection_string: string;
+	connectionString: string;
 	username?: string;
 	password?: string;
 	enterprise: boolean;
 	database?: string;
-	driverConfig: Record<string, unknown>;
+	driverConfig?: Record<string, unknown>;
 }
 
 export class Neode {
@@ -39,7 +42,7 @@ export class Neode {
 				? neo4j.auth.basic(options.username, options.password)
 				: undefined;
 		this._driver = neo4j.driver(
-			options.connection_string,
+			options.connectionString,
 			auth,
 			options.driverConfig ?? {},
 		);
@@ -79,7 +82,7 @@ export class Neode {
 	 *
 	 * @return {Neode}
 	 */
-	public static async fromEnv(): Promise<Neode> {
+	public static fromEnv(): Neode {
 		dotenvConfig();
 
 		const connection_string = `${process.env["NEO4J_PROTOCOL"]}://${process.env["NEO4J_HOST"]}:${process.env["NEO4J_PORT"]}`;
@@ -125,7 +128,7 @@ export class Neode {
 		}
 
 		return new Neode({
-			connection_string,
+			connectionString: connection_string,
 			username,
 			password,
 			enterprise,
@@ -239,7 +242,7 @@ export class Neode {
 	public create<T extends Record<string, unknown>>(
 		model: string,
 		properties: T,
-	): Promise<Node<T>> {
+	): Promise<Node<T> | undefined> {
 		return this.model<T>(model).create(properties);
 	}
 
@@ -248,8 +251,8 @@ export class Neode {
 	 */
 	public merge<T extends Record<string, unknown>>(
 		model: string,
-		properties: Partial<T>,
-	): Promise<Node<T>> {
+		properties: T,
+	): Promise<Node<T> | undefined> {
 		return this.model<T>(model).merge(properties);
 	}
 
@@ -258,14 +261,14 @@ export class Neode {
 	 *
 	 * @param model
 	 * @param match Specific properties to merge on
-	 * @param set   Properties to set
+	 * @param set Properties to set
 	 */
 	public mergeOn<T extends Record<string, unknown>>(
 		model: string,
-		match: Record<string, unknown>,
-		set: Record<string, unknown>,
-	): Promise<Node<T>> {
-		return this.model<T>(model).mergeOn<T>(match, set);
+		match: Partial<T>,
+		set: Partial<T>,
+	): Promise<Node<T> | undefined> {
+		return this.model<T>(model).mergeOn(match, set);
 	}
 
 	/**
@@ -274,15 +277,26 @@ export class Neode {
 	 * @param node The node to delete
 	 * @param toDepth Depth to delete to (Defaults to 10)
 	 */
-	delete<T>(node: Node<T>, toDepth = 10): Promise<Node<T>> {
+	public delete<T extends Record<string, unknown>>(
+		node: Node<T>,
+		toDepth = 10,
+	): Promise<Node<T> | undefined> {
 		return node.delete(toDepth);
 	}
 
 	/**
 	 * Delete all node labels
 	 */
-	public deleteAll(label: string | string[]) {
-		return this._models.getByLabels(label)?.deleteAll();
+	public deleteAll(
+		label: string | string[],
+	): Promise<QueryResult | undefined> {
+		const model = this._models.getByLabels(label);
+
+		if (model) {
+			return model.deleteAll();
+		} else {
+			return Promise.resolve(undefined);
+		}
 	}
 
 	/**
@@ -294,20 +308,27 @@ export class Neode {
 	 * @param properties Properties to set against the relationships
 	 * @param forceCreate Force the creation a new relationship? If false, the relationship will be merged
 	 */
-	relate<T, U>(
+	public relate<
+		T extends Record<string, unknown>,
+		O extends Record<string, unknown>,
+		R extends Record<string, unknown>,
+	>(
 		from: Node<T>,
-		to: Node<U>,
+		to: Node<O>,
 		type: string,
-		properties: Record<string, unknown>,
+		properties: Partial<R> = {},
 		forceCreate = false,
-	) {
+	): Promise<Relationship<R, T | O, T | O>> {
 		return from.relateTo(to, type, properties, forceCreate);
 	}
 
 	/**
 	 * Run an explicitly defined Read query
 	 */
-	readCypher(query: Query, params: QueryParams = {}): Promise<QueryResult> {
+	public readCypher<R extends RecordShape = RecordShape>(
+		query: Query,
+		params: QueryParams = {},
+	): Promise<QueryResult<R>> {
 		const session = this.readSession();
 
 		return this.cypher(query, params, session);
@@ -316,10 +337,10 @@ export class Neode {
 	/**
 	 * Run an explicitly defined Write query
 	 */
-	public writeCypher(
+	public writeCypher<R extends RecordShape = RecordShape>(
 		query: Query,
 		params: QueryParams = {},
-	): Promise<QueryResult> {
+	): Promise<QueryResult<R>> {
 		const session = this.writeSession();
 
 		return this.cypher(query, params, session);
@@ -328,16 +349,22 @@ export class Neode {
 	/**
 	 * Run a Cypher query
 	 */
-	public async cypher(
+	public async cypher<R extends RecordShape = RecordShape>(
 		query: string | { text: string; parameters?: Record<string, unknown> },
 		params?: Record<string, unknown>,
 		runInSession?: Session,
-	) {
+	): Promise<QueryResult<R>> {
 		// If single run, open a new session
 		const session = runInSession ?? this.session();
 		try {
+			console.info(
+				`\n=== Executing raw query ===\n${typeof query === "string" ? query : query.text}\n=== Params ===\n${typeof query === "object" ? query.parameters : JSON.stringify(params)}\n`,
+			);
+
 			return await session.run(query, params);
 		} catch (error) {
+			console.error("Query error", error);
+
 			throw new QueryError(
 				typeof query === "string" ? query : query.text,
 				typeof query === "string" ? params : query.parameters,
@@ -377,8 +404,6 @@ export class Neode {
 
 	/**
 	 * Create a new Transaction
-	 *
-	 * @return {Transaction}
 	 */
 	public async transaction<T>(
 		runInTransaction: (tx: Transaction) => Promise<T>,
@@ -412,18 +437,25 @@ export class Neode {
 
 	/**
 	 * Run a batch of queries within a transaction
-	 *
-	 * @type {Array}
-	 * @return {Promise}
 	 */
 	public async batch(queries: Query[]): Promise<QueryResult[]> {
 		return this.transaction(async (tx) => {
-			try {
-				return await Promise.all(queries.map((query) => tx.run(query)));
-			} catch (error) {
-				// TODO: How can I get the errors? Maybe Promise.settled?
-				throw new TransactionError([error]);
+			const results = await Promise.allSettled(
+				queries.map((query) => tx.run(query)),
+			);
+
+			const errorResults = results
+				.filter((r) => r.status === "rejected")
+				.map((r) => r.reason);
+
+			if (errorResults.length > 0) {
+				console.error("Transaction error", errorResults);
+				throw new TransactionError(errorResults);
 			}
+
+			return results
+				.filter((r) => r.status === "fulfilled")
+				.map((r) => r.value);
 		});
 	}
 
@@ -444,14 +476,16 @@ export class Neode {
 	/**
 	 * Get a collection of nodes
 	 */
-	public all(
+	public all<T extends Record<string, unknown>>(
 		label: string,
-		properties?: Record<string, unknown>,
-		order?: string[] | unknown[] | Record<string, unknown>,
+		properties: Partial<T>,
+		order?:
+			| (keyof T & string)
+			| Record<keyof T & string, OrderDirectionEnum>,
 		limit?: number,
 		skip?: number,
-	) {
-		return this.model(label).all(properties, order, limit, skip);
+	): Promise<Node<T>[]> {
+		return this.model<T>(label).all(properties, order, limit, skip);
 	}
 
 	/**
@@ -463,7 +497,7 @@ export class Neode {
 	public find<T extends Record<string, unknown>>(
 		label: string,
 		id: string | number,
-	): Promise<Node<T>> {
+	): Promise<Node<T> | undefined> {
 		return this.model<T>(label).find(id);
 	}
 
@@ -476,8 +510,8 @@ export class Neode {
 	public findById<T extends Record<string, unknown>>(
 		label: string,
 		id: number,
-	) {
-		return this.model(label).findById(id);
+	): Promise<Node<T> | undefined> {
+		return this.model<T>(label).findById(id);
 	}
 
 	/**
@@ -489,10 +523,19 @@ export class Neode {
 	 */
 	public first<T extends Record<string, unknown>>(
 		label: string,
-		key: string | Partial<T>,
+		key: keyof T & string,
 		value: unknown,
+	): Promise<Node<T> | undefined>;
+	public first<T extends Record<string, unknown>>(
+		label: string,
+		properties: Partial<T>,
+	): Promise<Node<T> | undefined>;
+	public first<T extends Record<string, unknown>>(
+		label: string,
+		keyOrObject: (keyof T & string) | Partial<T>,
+		value?: unknown,
 	) {
-		return this.model<T>(label).first(key, value);
+		return this.model<T>(label).first(keyOrObject, value);
 	}
 
 	/**
@@ -536,5 +579,3 @@ export class Neode {
 		return new NodeCollection(this, array);
 	}
 }
-
-module.exports = Neode;

@@ -125,10 +125,17 @@ export class Queryable<T extends Record<string, unknown>> {
 	 * @param properties An object of key/value pairs to find the node by
 	 */
 	public first(properties: Partial<T>): Promise<Node<T> | undefined>;
+	/**
+	 * @deprecated internal API
+	 */
 	public first(
 		keyOrObject: (keyof T & string) | Partial<T>,
 		value?: unknown,
-	) {
+	): Promise<Node<T> | undefined>;
+	public first(
+		keyOrObject: (keyof T & string) | Partial<T>,
+		value?: unknown,
+	): Promise<Node<T> | undefined> {
 		return First(this._neode, this._model, keyOrObject, value);
 	}
 

@@ -26,7 +26,7 @@ export class WhereStatement implements IStatement {
 	/**
 	 * Return the last condition in the collection
 	 */
-	public get last(): Where | WhereRaw | WhereId {
+	public get last(): Where | WhereRaw | WhereId | WhereBetween {
 		return this._clauses[this._clauses.length - 1];
 	}
 

@@ -131,7 +131,7 @@ export async function DeleteNode<T extends Record<string, unknown>>(
 
 	// Cascade delete to relationships
 	const relationshipsIterator = model.relationships.values() as MapIterator<
-		RelationshipType<Record<string, unknown>, Record<string, unknown>>
+		RelationshipType<Record<string, unknown>>
 	>;
 	for (const relationship of relationshipsIterator) {
 		if (relationship.cascade === RelationshipCascadePolicyEnum.DELETE) {

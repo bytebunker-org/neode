@@ -1,4 +1,4 @@
-import neo4j, { type Session } from "neo4j-driver";
+import neo4j, { type Result, type Session } from "neo4j-driver";
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
 import type {
@@ -63,7 +63,7 @@ export class Builder {
 	/**
 	 * Start a new Query segment and set the current statement
 	 */
-	statement(prefix = ""): this {
+	statement(prefix?: string): this {
 		if (this._current) {
 			this._statements.push(this._current);
 		}
@@ -799,24 +799,26 @@ export class Builder {
 	/**
 	 * Execute the query
 	 */
-	public async execute(queryMode = QueryMode.WRITE) {
+	public async execute(queryMode = QueryMode.WRITE): Promise<Result> {
 		const { query, params } = this.build();
 
 		let session: Session | undefined;
+
+		console.info(
+			`:\n=== Executing ${queryMode} builder query ===\n${query}\n=== Params ===\n${JSON.stringify(params)}\n`,
+		);
 
 		try {
 			if (queryMode === QueryMode.WRITE) {
 				session = this._neode.writeSession();
 
-				return await session.writeTransaction((tx) =>
+				return await session.executeWrite((tx) =>
 					tx.run(query, params),
 				);
 			} else {
 				session = this._neode.readSession();
 
-				return await session.readTransaction((tx) =>
-					tx.run(query, params),
-				);
+				return await session.executeRead((tx) => tx.run(query, params));
 			}
 		} finally {
 			session?.close();

@@ -1,4 +1,4 @@
-import Joi from "joi";
+import Joi, { type AlternativesSchema, type ObjectSchema } from "joi";
 import neo4j from "neo4j-driver";
 import { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
@@ -26,7 +26,7 @@ const ignore = [
 	"eager",
 	"hidden",
 	"readonly",
-	"index",
+	"indexed",
 	"unique",
 	"cascade",
 ] as const;
@@ -61,7 +61,15 @@ const isBooleanOrOption = (
 ): option is (typeof booleanOrOptions)[number] =>
 	booleanOrOptions.includes(option as (typeof booleanOrOptions)[number]);
 
-const temporal = Joi.extend((joi) => ({
+interface TemporalSchema extends Joi.ObjectSchema {
+	before(value: Date): this;
+
+	after(value: Date): this;
+}
+
+type JoiTemporalExtension = typeof Joi & { temporal: () => TemporalSchema };
+
+const temporalExtension = Joi.extend((joi) => ({
 	type: "temporal",
 	base: joi.object(),
 	messages: {
@@ -111,16 +119,16 @@ const temporal = Joi.extend((joi) => ({
 			},
 		},
 	},
-}));
+})) as JoiTemporalExtension;
 
-const neoInteger = Joi.extend((joi) => ({
+const neoIntegerExtension = Joi.extend((joi) => ({
 	type: "neoInteger",
 	base: joi.alternatives().try(
 		joi.number().integer(),
 		joi
 			.object()
-			// biome-ignore lint/complexity/noBannedTypes:
-			.instance(neo4j.types.Integer as unknown as Function),
+			// @ts-ignore
+			.instance(neo4j.types.Integer),
 	),
 	messages: {
 		"neoInteger.min":
@@ -182,15 +190,15 @@ const neoInteger = Joi.extend((joi) => ({
 			},
 		},
 	},
-}));
+})) as typeof Joi & { neoInteger: () => AlternativesSchema };
 
 // Usage example:
 // const schema = neoInteger.neoInteger().min(1).max(100).multiple(5);
 
-const point = Joi.extend((joi) => ({
+const pointExtension = Joi.extend((joi) => ({
 	type: "point",
 	base: joi.object().instance(neo4j.types.Point),
-}));
+})) as typeof Joi & { point: () => ObjectSchema };
 
 function nodeSchema() {
 	return Joi.alternatives().try(
@@ -202,15 +210,9 @@ function nodeSchema() {
 }
 
 function relationshipSchema(alias: string, properties = {}) {
-	return Joi.object().keys(
-		Object.assign(
-			{},
-			{
-				[alias]: nodeSchema().required(),
-			},
-			BuildValidationSchema(properties),
-		),
-	);
+	return BuildValidationSchema(properties).keys({
+		[alias]: nodeSchema().required(),
+	});
 }
 
 function BuildValidationSchema<T extends Record<string, unknown>>(
@@ -226,7 +228,7 @@ function BuildValidationSchema<T extends Record<string, unknown>>(
 		schema = schemaOrObject;
 	}
 
-	const objectSchema: Joi.SchemaMap = {};
+	const objectSchema = Joi.object();
 
 	for (const [key, value] of Object.entries(schema)) {
 		// Ignore Labels
@@ -290,21 +292,36 @@ function BuildValidationSchema<T extends Record<string, unknown>>(
 			nodeProperty.type === "int" ||
 			nodeProperty.type === "integer"
 		) {
-			validation = neoInteger.integer();
+			validation = neoIntegerExtension.neoInteger();
 		} else if (nodeProperty.type === "float") {
 			validation = Joi.number();
 		} else if (nodeProperty.type === "datetime") {
-			validation = temporal.temporal().type(neo4j.types.DateTime);
+			/*validation = temporalExtension
+				.temporal()
+				.instance(neo4j.types.DateTime);*/
+			validation = Joi.any();
 		} else if (nodeProperty.type === "date") {
-			validation = temporal.temporal().type(neo4j.types.Date);
+			/*validation = temporalExtension
+				.temporal()
+				.instance(neo4j.types.Date);*/
+			validation = Joi.any();
 		} else if (nodeProperty.type === "time") {
-			validation = temporal.temporal().type(neo4j.types.Time);
+			/*validation = temporalExtension
+				.temporal()
+				.instance(neo4j.types.Time);*/
+			validation = Joi.any();
 		} else if (nodeProperty.type === "localdatetime") {
-			validation = temporal.temporal().type(neo4j.types.LocalDateTime);
+			/*validation = temporalExtension
+				.temporal()
+				.instance(neo4j.types.LocalDateTime);*/
+			validation = Joi.any();
 		} else if (nodeProperty.type === "localtime") {
-			validation = temporal.temporal().type(neo4j.types.LocalTime);
+			/*validation = temporalExtension
+				.temporal()
+				.instance(neo4j.types.LocalTime);*/
+			validation = Joi.any();
 		} else if (nodeProperty.type === "point") {
-			validation = point.point().type(neo4j.types.Point);
+			validation = pointExtension.point().instance(neo4j.types.Point);
 		} else {
 			validation = Joi.any();
 		}
@@ -347,10 +364,12 @@ function BuildValidationSchema<T extends Record<string, unknown>>(
 			}
 		}
 
-		objectSchema[key] = validation;
+		objectSchema.keys({
+			[key]: validation,
+		});
 	}
 
-	return Joi.object(objectSchema);
+	return objectSchema;
 }
 
 /**

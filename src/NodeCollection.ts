@@ -11,7 +11,7 @@ export class NodeCollection<T extends Record<string, unknown>> extends Array<
 	 * @param neode Neode Instance
 	 * @param values Array of Node
 	 */
-	constructor(neode: Neode, values: Node<T>[]) {
+	constructor(neode: Neode, values: Node<T>[] = []) {
 		super(...values);
 
 		this._neode = neode;
