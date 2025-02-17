@@ -79,7 +79,7 @@ export async function RelateTo<
 		relationship.direction === RelationshipDirectionEnum.IN ? to : from
 	) as Node<S | E>;
 	const hydrateTo = (
-		relationship.direction === RelationshipDirectionEnum.OUT ? from : to
+		relationship.direction === RelationshipDirectionEnum.IN ? from : to
 	) as Node<S | E>;
 
 	const relationProperties = new Map(
