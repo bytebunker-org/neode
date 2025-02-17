@@ -52,7 +52,7 @@ describe("Query/Builder.js", () => {
 			const expected = [
 				"MATCH",
 				"(this:QueryBuilderTest)",
-				"WHERE (id(this) = $where_this_id) ",
+				"WHERE (elementId(this) = $where_this_id) ",
 				"RETURN",
 				"this",
 			].join("\n");
@@ -76,10 +76,10 @@ describe("Query/Builder.js", () => {
 			const expected = [
 				"MATCH",
 				"(this:QueryBuilderTest)",
-				"WHERE (id(this) = $where_this_id) ",
+				"WHERE (elementId(this) = $where_this_id) ",
 				"MATCH",
 				"(that:QueryBuilderTest)",
-				"WHERE (id(that) = $where_that_id) ",
+				"WHERE (elementId(that) = $where_that_id) ",
 				"RETURN",
 				"this,that",
 			].join("\n");
@@ -338,12 +338,12 @@ describe("Query/Builder.js", () => {
 			const expected = [
 				"MATCH",
 				"(this:QueryBuilderTest)",
-				"WHERE (id(this) = $where_this_id) ",
+				"WHERE (elementId(this) = $where_this_id) ",
 				"WITH this",
 				"",
 				"MATCH",
 				"(that:QueryBuilderTest)",
-				"WHERE (id(that) = $where_that_id) ",
+				"WHERE (elementId(that) = $where_that_id) ",
 				"RETURN",
 				"this,that",
 			].join("\n");

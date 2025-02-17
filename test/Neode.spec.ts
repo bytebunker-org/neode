@@ -81,8 +81,8 @@ describe("Neode", () => {
 		expect(res.records.length).toEqual(1);
 	});
 
-	it("should handle error in syntax query", () => {
-		expect(
+	it("should handle error in syntax query", async () => {
+		await expect(
 			instance.cypher("MATCH (n) RETURN coutn(n)"),
 		).rejects.toThrowError();
 	});
@@ -102,8 +102,8 @@ describe("Neode", () => {
 			expect(res.length).toEqual(2);
 		});
 
-		it("should throw a transaction error on error", () => {
-			expect(
+		it("should throw a transaction error on error", async () => {
+			await expect(
 				instance.batch(["MATCH (a) RETURN b", "RETURN x"]),
 			).rejects.toThrowError(TransactionError);
 		});
@@ -237,11 +237,11 @@ describe("Neode", () => {
 			expect(rel.properties).to.deep.equal(props);
 
 			const res = await instance.cypher(
-				"MATCH (start)-[rel]->(end) WHERE id(start) = $start AND id(rel) = $rel AND id(end) = $end RETURN count(*) as count",
+				"MATCH (start)-[rel]->(end) WHERE elementId(start) = $start AND elementId(rel) = $rel AND elementId(end) = $end RETURN count(*) as count",
 				{
-					start: rel.startNode.identity,
-					rel: rel.identity,
-					end: rel.endNode.identity,
+					start: rel.startNode.id,
+					rel: rel.id,
+					end: rel.endNode.id,
 				},
 			);
 
@@ -275,11 +275,11 @@ describe("Neode", () => {
 			expect(rel2.properties).to.deep.equal(props);
 
 			const res = await instance.cypher(
-				`MATCH (start)-[:${rel2.type}]->(end) WHERE id(start) = $start AND id(end) = $end RETURN count(*) as count`,
+				`MATCH (start)-[:${rel2.type}]->(end) WHERE elementId(start) = $start AND elementId(end) = $end RETURN count(*) as count`,
 				{
-					start: rel2.startNode.identity,
-					rel: rel2.identity,
-					end: rel2.endNode.identity,
+					start: rel2.startNode.id,
+					rel: rel2.id,
+					end: rel2.endNode.id,
 				},
 			);
 			expect(res.records[0].get("count").toNumber()).toEqual(2);
@@ -294,7 +294,7 @@ describe("Neode", () => {
 			expect(from).toBeDefined();
 			expect(to).toBeDefined();
 
-			expect(
+			await expect(
 				instance.relate(from!, to!, "unknown"),
 			).rejects.toThrowError();
 		});
@@ -313,10 +313,10 @@ describe("Neode", () => {
 			await from!.detachFrom(to!);
 
 			const res = await instance.cypher(
-				"MATCH (start)-[rel]->(end) WHERE id(start) = $start AND id(end) = $end RETURN count(*) as count",
+				"MATCH (start)-[rel]->(end) WHERE elementId(start) = $start AND elementId(end) = $end RETURN count(*) as count",
 				{
-					start: from!.identity,
-					end: to!.identity,
+					start: from!.id,
+					end: to!.id,
 				},
 			);
 

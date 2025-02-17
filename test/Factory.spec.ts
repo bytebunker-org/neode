@@ -114,7 +114,7 @@ describe("Factory", () => {
                 MATCH (n:FactoryTest)
                 RETURN n {
                     .*,
-                    ${EAGER_ID}: id(n),
+                    ${EAGER_ID}: elementId(n),
                     ${EAGER_LABELS}: labels(n)
                 } ORDER BY n.id ASC LIMIT 1
             `);
@@ -132,7 +132,7 @@ describe("Factory", () => {
                 MATCH (n:FactoryTest)
                 RETURN n {
                     .*,
-                    ${EAGER_ID}: id(n),
+                    ${EAGER_ID}: elementId(n),
                     ${EAGER_LABELS}: labels(n)
                 } ORDER BY n.id ASC LIMIT 1
             `)
@@ -170,7 +170,7 @@ describe("Factory", () => {
                 MATCH (n:FactoryTest)
                 RETURN n {
                     .*,
-                    ${EAGER_ID}: id(n),
+                    ${EAGER_ID}: elementId(n),
                     ${EAGER_LABELS}: labels(n)
                 } ORDER BY n.id ASC
             `);
@@ -190,7 +190,7 @@ describe("Factory", () => {
                 MATCH (n:FactoryTest)
                 RETURN n {
                     .*,
-                    ${EAGER_ID}: id(n),
+                    ${EAGER_ID}: elementId(n),
                     ${EAGER_LABELS}: labels(n)
                 } ORDER BY n.id ASC
             `);

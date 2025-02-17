@@ -81,7 +81,7 @@ describe("Query/EagerUtils.js", () => {
 				.replace(/\n/g, "")
 				.replace(/\s\s/g, "");
 			const expected =
-				"directorNode: [ (this)<-[this_directorNode_rel:`DIRECTED`]-(this_directorNode_node:Person) |this_directorNode_node { .*,__EAGER_ID__: id(this_directorNode_node),__EAGER_LABELS__: labels(this_directorNode_node)";
+				"directorNode: [ (this)<-[this_directorNode_rel:`DIRECTED`]-(this_directorNode_node:Person) |this_directorNode_node { .*,__EAGER_ID__: elementId(this_directorNode_node),__EAGER_LABELS__: labels(this_directorNode_node)";
 
 			expect(output.indexOf(expected)).to.equal(0);
 			expect(output.substr(-3)).to.equal("[0]");
@@ -93,7 +93,7 @@ describe("Query/EagerUtils.js", () => {
 				.replace(/\n/g, "")
 				.replace(/\s\s/g, "");
 			const expected =
-				"actorNodes: [ (this)<-[this_actorNodes_rel:`ACTED_IN`]-(this_actorNodes_node:Person) |this_actorNodes_node { .*,__EAGER_ID__: id(this_actorNodes_node),__EAGER_LABELS__: labels(this_actorNodes_node)";
+				"actorNodes: [ (this)<-[this_actorNodes_rel:`ACTED_IN`]-(this_actorNodes_node:Person) |this_actorNodes_node { .*,__EAGER_ID__: elementId(this_actorNodes_node),__EAGER_LABELS__: labels(this_actorNodes_node)";
 
 			expect(output.indexOf(expected)).to.equal(0);
 		});
@@ -104,7 +104,7 @@ describe("Query/EagerUtils.js", () => {
 				.replace(/\n/g, "")
 				.replace(/\s\s/g, "");
 			const expected =
-				"directorRel: [ (this)<-[this_directorRel_rel:`DIRECTED`]-(this_directorRel_node:Person) |this_directorRel_rel { .*,__EAGER_ID__: id(this_directorRel_rel),__EAGER_TYPE__: type(this_directorRel_rel),director:this_directorRel_node { .*,__EAGER_ID__: id(this_directorRel_node),__EAGER_LABELS__: labels(this_directorRel_node),movies: [ (this_directorRel_node)-[this_directorRel_node_movies_rel:`ACTED_IN`]->(this_directorRel_node_movies_node:Movie) |this_directorRel_node_movies_node { .*,__EAGER_ID__: id(this_directorRel_node_movies_node),__EAGER_LABELS__: labels(this_directorRel_node_movies_node)} ]}} ][0]";
+				"directorRel: [ (this)<-[this_directorRel_rel:`DIRECTED`]-(this_directorRel_node:Person) |this_directorRel_rel { .*,__EAGER_ID__: elementId(this_directorRel_rel),__EAGER_TYPE__: type(this_directorRel_rel),director:this_directorRel_node { .*,__EAGER_ID__: elementId(this_directorRel_node),__EAGER_LABELS__: labels(this_directorRel_node),movies: [ (this_directorRel_node)-[this_directorRel_node_movies_rel:`ACTED_IN`]->(this_directorRel_node_movies_node:Movie) |this_directorRel_node_movies_node { .*,__EAGER_ID__: elementId(this_directorRel_node_movies_node),__EAGER_LABELS__: labels(this_directorRel_node_movies_node)} ]}} ][0]";
 
 			expect(output).to.equal(expected);
 		});
@@ -116,7 +116,7 @@ describe("Query/EagerUtils.js", () => {
 				.replace(/\s\s/g, "");
 
 			const expected =
-				"actorRels: [ (this)<-[this_actorRels_rel:`ACTED_IN`]-(this_actorRels_node:Person) |this_actorRels_rel { .*,__EAGER_ID__: id(this_actorRels_rel),__EAGER_TYPE__: type(this_actorRels_rel),actor:this_actorRels_node { .*,__EAGER_ID__: id(this_actorRels_node),__EAGER_LABELS__: labels(this_actorRels_node),movies: [ (this_actorRels_node)-[this_actorRels_node_movies_rel:`ACTED_IN`]->(this_actorRels_node_movies_node:Movie) |this_actorRels_node_movies_node { .*,__EAGER_ID__: id(this_actorRels_node_movies_node),__EAGER_LABELS__: labels(this_actorRels_node_movies_node)} ]}} ]";
+				"actorRels: [ (this)<-[this_actorRels_rel:`ACTED_IN`]-(this_actorRels_node:Person) |this_actorRels_rel { .*,__EAGER_ID__: elementId(this_actorRels_rel),__EAGER_TYPE__: type(this_actorRels_rel),actor:this_actorRels_node { .*,__EAGER_ID__: elementId(this_actorRels_node),__EAGER_LABELS__: labels(this_actorRels_node),movies: [ (this_actorRels_node)-[this_actorRels_node_movies_rel:`ACTED_IN`]->(this_actorRels_node_movies_node:Movie) |this_actorRels_node_movies_node { .*,__EAGER_ID__: elementId(this_actorRels_node_movies_node),__EAGER_LABELS__: labels(this_actorRels_node_movies_node)} ]}} ]";
 
 			expect(output).to.equal(expected);
 		});
@@ -128,34 +128,34 @@ describe("Query/EagerUtils.js", () => {
 			.replace(/\s{2,}/g, "");
 
 		it("should request properties and ids for a node", () => {
-			const props = `this {.*,__EAGER_ID__: id(this),__EAGER_LABELS__: labels(this)`;
+			const props = `this {.*,__EAGER_ID__: elementId(this),__EAGER_LABELS__: labels(this)`;
 
 			expect(pattern.indexOf(props) > -1).to.equal(true);
 		});
 
 		it("should request an eager `node`", () => {
 			const props =
-				"directorNode: [ (this)<-[this_directorNode_rel:`DIRECTED`]-(this_directorNode_node:Person) |this_directorNode_node {.*,__EAGER_ID__: id(this_directorNode_node),__EAGER_LABELS__: labels(this_directorNode_node)";
+				"directorNode: [ (this)<-[this_directorNode_rel:`DIRECTED`]-(this_directorNode_node:Person) |this_directorNode_node {.*,__EAGER_ID__: elementId(this_directorNode_node),__EAGER_LABELS__: labels(this_directorNode_node)";
 			expect(pattern.indexOf(props) > -1).to.equal(true);
 		});
 
 		it("should request a nested eager statement", () => {
 			const props =
-				"movies: [ (this_directorRel_node)-[this_directorRel_node_movies_rel:`ACTED_IN`]->(this_directorRel_node_movies_node:Movie) |this_directorRel_node_movies_node {.*,__EAGER_ID__: id(this_directorRel_node_movies_node),__EAGER_LABELS__: labels(this_directorRel_node_movies_node)} ]}} ]";
+				"movies: [ (this_directorRel_node)-[this_directorRel_node_movies_rel:`ACTED_IN`]->(this_directorRel_node_movies_node:Movie) |this_directorRel_node_movies_node {.*,__EAGER_ID__: elementId(this_directorRel_node_movies_node),__EAGER_LABELS__: labels(this_directorRel_node_movies_node)} ]}} ]";
 			expect(pattern.indexOf(props) > -1).to.equal(true);
 		});
 
 		it("should request eager `nodes`", () => {
 			const props =
-				"actorNodes: [ (this)<-[this_actorNodes_rel:`ACTED_IN`]-(this_actorNodes_node:Person) |this_actorNodes_node {.*,__EAGER_ID__: id(this_actorNodes_node),__EAGER_LABELS__: labels(this_actorNodes_node)";
+				"actorNodes: [ (this)<-[this_actorNodes_rel:`ACTED_IN`]-(this_actorNodes_node:Person) |this_actorNodes_node {.*,__EAGER_ID__: elementId(this_actorNodes_node),__EAGER_LABELS__: labels(this_actorNodes_node)";
 			expect(pattern.indexOf(props) > -1).to.equal(true);
 		});
 
 		it("should request an eager `relationship`", () => {
 			const props =
-				"directorRel: [ (this)<-[this_directorRel_rel:`DIRECTED`]-(this_directorRel_node:Person) |this_directorRel_rel {.*,__EAGER_ID__: id(this_directorRel_rel),__EAGER_TYPE__: type(this_directorRel_rel)";
+				"directorRel: [ (this)<-[this_directorRel_rel:`DIRECTED`]-(this_directorRel_node:Person) |this_directorRel_rel {.*,__EAGER_ID__: elementId(this_directorRel_rel),__EAGER_TYPE__: type(this_directorRel_rel)";
 			const director_props =
-				"director:this_directorRel_node {.*,__EAGER_ID__: id(this_directorRel_node),__EAGER_LABELS__: labels(this_directorRel_node)";
+				"director:this_directorRel_node {.*,__EAGER_ID__: elementId(this_directorRel_node),__EAGER_LABELS__: labels(this_directorRel_node)";
 
 			expect(pattern.indexOf(props) > -1).to.equal(true);
 			expect(pattern.indexOf(director_props) > -1).to.equal(true);
@@ -163,7 +163,7 @@ describe("Query/EagerUtils.js", () => {
 
 		it("should request eager `relationships`", () => {
 			const props =
-				"actorRels: [ (this)<-[this_actorRels_rel:`ACTED_IN`]-(this_actorRels_node:Person) |this_actorRels_rel {.*,__EAGER_ID__: id(this_actorRels_rel),__EAGER_TYPE__: type(this_actorRels_rel),actor:this_actorRels_node {.*,__EAGER_ID__: id(this_actorRels_node),__EAGER_LABELS__: labels(this_actorRels_node),movies: [ (this_actorRels_node)-[this_actorRels_node_movies_rel:`ACTED_IN`]->(this_actorRels_node_movies_node:Movie) |this_actorRels_node_movies_node {.*,__EAGER_ID__: id(this_actorRels_node_movies_node),__EAGER_LABELS__: labels(this_actorRels_node_movies_node)} ]}} ]";
+				"actorRels: [ (this)<-[this_actorRels_rel:`ACTED_IN`]-(this_actorRels_node:Person) |this_actorRels_rel {.*,__EAGER_ID__: elementId(this_actorRels_rel),__EAGER_TYPE__: type(this_actorRels_rel),actor:this_actorRels_node {.*,__EAGER_ID__: elementId(this_actorRels_node),__EAGER_LABELS__: labels(this_actorRels_node),movies: [ (this_actorRels_node)-[this_actorRels_node_movies_rel:`ACTED_IN`]->(this_actorRels_node_movies_node:Movie) |this_actorRels_node_movies_node {.*,__EAGER_ID__: elementId(this_actorRels_node_movies_node),__EAGER_LABELS__: labels(this_actorRels_node_movies_node)} ]}} ]";
 			expect(pattern.indexOf(props) > -1).to.equal(true);
 		});
 	});

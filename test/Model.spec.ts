@@ -181,15 +181,15 @@ describe("Model", () => {
 			expect(res2.get("updated")).toBeTruthy();
 
 			const records = await instance.cypher(
-				"MATCH ()-[r]->() WHERE id(r) = $id RETURN r.updated AS updated",
-				{ id: res2.identity },
+				"MATCH ()-[r]->() WHERE elementId(r) = $id RETURN r.updated AS updated",
+				{ id: res2.id },
 			);
 			expect(records.records[0].get("updated")).toBeTruthy();
 
 			const deleteRes = await relationship.delete();
 			await instance
-				.cypher("MATCH ()-[r]->() WHERE id(r) = $id RETURN r", {
-					id: deleteRes.identity,
+				.cypher("MATCH ()-[r]->() WHERE elementId(r) = $id RETURN r", {
+					id: deleteRes.id,
 				})
 				.then((res) => {
 					expect(res.records.length).toEqual(0);
