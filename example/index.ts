@@ -1,51 +1,53 @@
-/* eslint-disable */
-import neode from './neode';
-import Person from './Person';
+import { PersonSchema } from "./Person.js";
+import { exampleNeodeInstance } from "./neode.js";
 
-/**
- * Define a Person
- */
-neode.model('Person', Person);
+async function main() {
+	/**
+	 * Define a Person
+	 */
+	exampleNeodeInstance.model("Person", PersonSchema);
 
+	try {
+		/**
+		 * Create a couple of People nodes
+		 */
+		const [adam, joe] = await Promise.all([
+			exampleNeodeInstance.create("Person", { name: "Adam" }),
+			exampleNeodeInstance.create("Person", { name: "Joe" }),
+		]);
 
-/**
- * Create a couple of People nodes
- */
-Promise.all([
-    neode.create('Person', {name: 'Adam'}),
-    neode.create('Person', {name: 'Joe'})
-])
+		if (!adam || !joe) {
+			throw new Error("Failed to create nodes");
+		}
 
-/**
- * Log out some details and relate the two together
- */
-.then(([adam, joe]) => {
-    console.log('adam', adam.id(), adam.get('person_id'), adam.get('name'));
-    console.log('joe', joe.id(), joe.get('person_id'), joe.get('name'));
+		/**
+		 * Log out some details and relate the two together
+		 */
+		console.log("adam", adam.id, adam.get("person_id"), adam.get("name"));
+		console.log("joe", joe.id, joe.get("person_id"), joe.get("name"));
 
-    return adam.relateTo(joe, 'knows', {since: new Date('2017-01-02 12:34:56')});
-})
+		const relation = await adam.relateTo(joe, "knows", {
+			since: new Date("2017-01-02 12:34:56"),
+		});
+		/**
+		 * Log out relationship details
+		 */
+		console.log("rel", relation.id, relation.get("since"));
+		/**
+		 * Delete the two nodes
+		 */
+		await Promise.all([
+			relation.startNode.delete(),
+			relation.endNode.delete(),
+		]);
+	} catch (error) {
+		console.error("An error occurred during the example", error);
+	} finally {
+		/**
+		 * Close Driver
+		 */
+		await exampleNeodeInstance.close();
+	}
+}
 
-/**
- * Log out relationship details
- */
-.then(rel => {
-    console.log('rel', rel.id(), rel.get('since'));
-
-    return rel;
-})
-
-/**
- * Delete the two nodes
- */
-.then(rel => {
-    return Promise.all([
-        rel.startNode().delete(),
-        rel.endNode().delete()
-    ]);
-})
-
-/**
- * Close Driver
- */
-.then(() => neode.close());
+main();

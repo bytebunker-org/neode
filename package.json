@@ -6,18 +6,16 @@
 	"types": "types/index.d.ts",
 	"type": "module",
 	"scripts": {
-		"build": "./node_modules/@babel/cli/bin/babel.js src -d build",
-		"test": "./node_modules/.bin/mocha --timeout 5000 --require @babel/register ./test{/,/**/}*.spec.js",
+		"build": "tsc -p tsconfig.build.json",
 		"lint": "./node_modules/.bin/eslint src/",
 		"coverage": "./node_modules/.bin/nyc --reporter=html npm test",
-		"tdd": "./node_modules/.bin/mocha --require @babel/register --watch"
+		"test": "vitest run",
+		"test:cov": "vitest run --coverage",
+		"test:debug": "vitest --inspect-brk --inspect --logHeapUsage --threads=false",
+		"test:watch": "vitest",
+		"test:watch-ui": "vitest --ui"
 	},
-	"keywords": [
-		"neo4j",
-		"graph",
-		"cypher",
-		"ogm"
-	],
+	"keywords": ["neo4j", "graph", "cypher", "ogm"],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/adam-cowley/neode.git"
@@ -27,8 +25,7 @@
 	"dependencies": {
 		"dotenv": "^16.4.7",
 		"joi": "^17.13.3",
-		"neo4j-driver": "^4.2.2",
-		"uuid": "^3.4.0"
+		"uuid": "^11.0.5"
 	},
 	"devDependencies": {
 		"@babel/cli": "^7.8.4",
@@ -39,11 +36,11 @@
 		"@biomejs/biome": "1.9.4",
 		"@types/node": "^22.13.4",
 		"@types/uuid": "^10.0.0",
-		"chai": "^3.5.0",
-		"eslint": "^4.19.1",
-		"mocha": "^5.2.0",
-		"nyc": "^14.1.1",
-		"typescript": "^5.7.3"
+		"@vitest/coverage-v8": "^3.0.5",
+		"@vitest/ui": "^3.0.5",
+		"neo4j-driver": "^5.28.1",
+		"typescript": "^5.7.3",
+		"vitest": "^3.0.5"
 	},
 	"bugs": {
 		"url": "https://github.com/adam-cowley/neode/issues"

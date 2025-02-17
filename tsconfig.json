@@ -25,6 +25,10 @@
 		"noImplicitReturns": true,
 		"noPropertyAccessFromIndexSignature": true,
 		"isolatedModules": true,
-		"rewriteRelativeImportExtensions": true
-	}
+		"rewriteRelativeImportExtensions": true,
+		"outDir": "./lib",
+		"baseUrl": "./",
+		"rootDir": "./"
+	},
+	"exclude": ["node_modules", "lib", "*.d.ts", "vitest.config.ts"]
 }

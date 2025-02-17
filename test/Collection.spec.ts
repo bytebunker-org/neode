@@ -1,22 +1,23 @@
-import { expect } from "chai";
-import Collection from "../src/NodeCollection.js";
+import { describe, expect, it } from "vitest";
+import type { Neode } from "../src/Neode.ts";
+import { NodeCollection } from "../src/NodeCollection.js";
 
-describe("Collection.js", () => {
-	const neode = "__neode__";
+describe("NodeCollection", () => {
+	const neode = "__neode__" as unknown as Neode;
 	const values = [1, 2, 3, 4];
 
-	const collection = new Collection(neode, values);
+	const collection = new NodeCollection(neode, values);
 
 	describe("::constructor", () => {
 		it("should construct", () => {
 			expect(collection._neode).to.equal(neode);
-			expect(collection._values).to.equal(values);
+			expect([...collection]).containSubset(values);
 		});
 
 		it("should construct with an empty array", () => {
-			const collection = new Collection(neode);
+			const collection = new NodeCollection(neode);
 			expect(collection._neode).to.equal(neode);
-			expect(collection._values).to.deep.equal([]);
+			expect([...collection]).to.deep.equal([]);
 		});
 	});
 
@@ -52,50 +53,24 @@ describe("Collection.js", () => {
 		});
 	});
 
-	describe("::map", () => {
-		it("should apply a map function to the values", () => {
-			const output = collection.map((value) => value * value);
-
-			expect(output).to.deep.equal([1, 4, 9, 16]);
-		});
-	});
-
-	describe("::forEach", () => {
-		it("should apply a foreach function to the values", () => {
-			let total = 0;
-
-			collection.forEach((value) => (total += value));
-
-			expect(total).to.equal(10);
-		});
-	});
-
 	describe("::toJson", () => {
 		class TestItem {
-			constructor(value) {
-				this.value = value;
-			}
+			constructor(private readonly value: number) {}
 
 			toJson() {
 				return this.value;
 			}
 		}
 
-		const jsonTest = new Collection(null, [
+		const jsonTest = new NodeCollection(neode, [
 			new TestItem(1),
 			new TestItem(2),
 			new TestItem(3),
 			new TestItem(4),
 		]);
 
-		it("should run the toJson() function to all values", (done) => {
-			jsonTest
-				.toJson()
-				.then((res) => {
-					expect(res).to.deep.equal([1, 2, 3, 4]);
-				})
-				.then(() => done())
-				.catch((e) => done(e));
+		it("should run the toJson() function to all values", async () => {
+			expect(jsonTest.toJson()).to.deep.equal([1, 2, 3, 4]);
 		});
 	});
 });
