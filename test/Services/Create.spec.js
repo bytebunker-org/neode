@@ -106,7 +106,7 @@ describe("Services/Create.js", () => {
 	};
 
 	before(() => {
-		instance = require("../instance")();
+		instance = require("../instance.js")();
 		model = instance.model(label, schema);
 	});
 

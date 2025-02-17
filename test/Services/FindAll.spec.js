@@ -1,4 +1,4 @@
-import { assert, expect } from "chai";
+import { expect } from "chai";
 import Node from "../../src/Node";
 import Create from "../../src/Services/Create.js";
 import FindAll from "../../src/Services/FindAll.js";
@@ -70,7 +70,7 @@ describe("Services/FindAll.js", () => {
 	};
 
 	before(() => {
-		instance = require("../instance")();
+		instance = require("../instance.js")();
 		instance.model(other_label, { id: "number" });
 		model = instance.model(label, schema);
 	});

@@ -1,4 +1,4 @@
-import { assert, expect } from "chai";
+import { expect } from "chai";
 import GenerateDefaultValues from "../../src/Services/GenerateDefaultValues.js";
 
 describe("Services/GenerateDefaultValues.js", () => {
@@ -22,7 +22,7 @@ describe("Services/GenerateDefaultValues.js", () => {
 	};
 
 	before(() => {
-		instance = require("../instance")();
+		instance = require("../instance.js")();
 		model = instance.model(label, schema);
 	});
 

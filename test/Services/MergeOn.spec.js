@@ -97,7 +97,7 @@ describe("Services/MergeOn.js", () => {
 	const merge_on = ["name"];
 
 	before(() => {
-		instance = require("../instance")();
+		instance = require("../instance.js")();
 		model = instance.model(label, schema);
 	});
 

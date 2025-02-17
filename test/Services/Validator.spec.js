@@ -9,7 +9,7 @@ describe("Services/Validator.js", () => {
 	let instance;
 
 	before(() => {
-		instance = require("../instance")();
+		instance = require("../instance.js")();
 	});
 
 	after(() => {

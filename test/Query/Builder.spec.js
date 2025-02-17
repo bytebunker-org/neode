@@ -1,4 +1,4 @@
-import { assert, expect } from "chai";
+import { expect } from "chai";
 import { int } from "neo4j-driver";
 import Builder, { mode } from "../../src/Query/Builder.js";
 import WhereStatement from "../../src/Query/WhereStatement.js";
@@ -11,7 +11,7 @@ describe("Query/Builder.js", () => {
 	const label = "QueryBuilderTest";
 
 	before(() => {
-		instance = require("../instance")();
+		instance = require("../instance.js")();
 
 		model = instance.model(label, {
 			id: {

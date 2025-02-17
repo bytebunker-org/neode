@@ -1,4 +1,4 @@
-import { assert, expect } from "chai";
+import { expect } from "chai";
 import neo4j from "neo4j-driver";
 import CleanValue from "../../src/Services/CleanValue.js";
 

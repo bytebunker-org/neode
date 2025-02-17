@@ -1,7 +1,5 @@
-import { assert, expect } from "chai";
-import Node from "../../src/Node";
+import { expect } from "chai";
 import Create from "../../src/Services/Create.js";
-import FindAll from "../../src/Services/FindAll.js";
 
 describe("UpdateNode", () => {
 	let instance;
@@ -35,7 +33,7 @@ describe("UpdateNode", () => {
 	};
 
 	before(() => {
-		instance = require("../instance")();
+		instance = require("../instance.js")();
 		model = instance.model(label, schema);
 	});
 
