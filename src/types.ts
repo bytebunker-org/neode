@@ -232,7 +232,7 @@ export type EntityPropertyMap<T extends Record<string, unknown>> =
 	T extends Record<infer K, infer V> ? Map<K, V> : never;
 
 export interface SerializedGraph {
-	_id: number;
+	_id: string;
 	_labels?: string[];
 	type?: string;
 

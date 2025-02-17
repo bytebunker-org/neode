@@ -14,7 +14,7 @@ import type { EntityPropertyMap } from "./types.js";
 import { hasOwn } from "./util/util.js";
 
 interface RawDataRecord extends Record<string, unknown> {
-	[EAGER_ID]: neo4j.Integer;
+	[EAGER_ID]: string;
 	[EAGER_LABELS]?: string[];
 	[EAGER_TYPE]?: string;
 }
@@ -85,13 +85,13 @@ export class Factory {
 		record: RawDataRecord,
 		definitionOrString?: Model<T> | string,
 	): Node<T> {
-		if (!hasOwn(record, EAGER_ID) || !neo4j.isInt(record[EAGER_ID])) {
+		if (!hasOwn(record, EAGER_ID) || typeof record[EAGER_ID] !== "string") {
 			throw new Error(
 				`No node identity found in record ${JSON.stringify(record, null, 2)}`,
 			);
 		}
 
-		const identity = record[EAGER_ID] as neo4j.Integer;
+		const identity = record[EAGER_ID];
 
 		// Get Internals
 		const labels = record[EAGER_LABELS];

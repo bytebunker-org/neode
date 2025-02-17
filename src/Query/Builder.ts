@@ -276,16 +276,16 @@ export class Builder {
 	}
 
 	/**
-	 * Query on Internal ID
+	 * Query on Internal Element ID
 	 */
-	public whereId(alias: string, value: Integerable): this {
+	public whereId(alias: string, value: string): this {
 		if (!this._where) {
 			throw new Error(
 				"You must add a where statement before adding a where clause",
 			);
 		}
 
-		const param = this._addWhereParameter(`${alias}_id`, neo4j.int(value));
+		const param = this._addWhereParameter(`${alias}_id`, value);
 
 		this._where.append(new WhereId(alias, param));
 

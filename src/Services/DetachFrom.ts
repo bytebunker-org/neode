@@ -7,14 +7,14 @@ export function DetachFrom<
 	U extends Record<string, unknown>,
 >(neode: Neode, from: Node<T>, to: Node<U>): Promise<QueryResult> {
 	const params = {
-		from_id: from.identity,
-		to_id: to.identity,
+		fromId: from.id,
+		toId: to.id,
 	};
 
 	const query = `
         MATCH (from)-[rel]-(to)
-        WHERE id(from) = $from_id
-        AND id(to) = $to_id
+        WHERE elementId(from) = $fromId
+        AND elementId(to) = $toId
         DELETE rel
     `;
 

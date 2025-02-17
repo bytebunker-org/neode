@@ -271,7 +271,7 @@ export function addRelationshipToStatement<
 
 	// If Node is passed, attempt to create a relationship to that specific node
 	if (nodeValue instanceof Node) {
-		builder.match(targetAlias).whereId(targetAlias, nodeValue.identity);
+		builder.match(targetAlias).whereId(targetAlias, nodeValue.id);
 	} else if (typeof nodeValue === "string" || typeof nodeValue === "number") {
 		// If Primary key is passed then try to match on that
 		const model =
@@ -375,7 +375,7 @@ export function addNodeRelationshipToStatement<
 
 	// If Node is passed, attempt to create a relationship to that specific node
 	if (value instanceof Node) {
-		builder.match(targetAlias).whereId(targetAlias, value.identity);
+		builder.match(targetAlias).whereId(targetAlias, value.id);
 	} else if (typeof value === "string" || typeof value === "number") {
 		// If Primary key is passed then try to match on that
 

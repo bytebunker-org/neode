@@ -7,12 +7,12 @@ import { Validator } from "./Validator.js";
 export async function UpdateNode<T extends Record<string, unknown>>(
 	neode: Neode,
 	model: Model<T>,
-	identity: Integerable,
+	identity: string,
 	properties: Partial<T>,
 ): Promise<{ key: string; value: unknown }[]> {
 	const query = `
         MATCH (node)
-        WHERE id(node) = $identity
+        WHERE elementId(node) = $identity
         SET node += $properties
         WITH node
 

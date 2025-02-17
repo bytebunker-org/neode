@@ -105,7 +105,7 @@ export class Queryable<T extends Record<string, unknown>> {
 	/**
 	 * Find a Node by its internal node ID
 	 */
-	public findById(id: Integerable): Promise<Node<T> | undefined> {
+	public findById(id: string): Promise<Node<T> | undefined> {
 		return FindById(this._neode, this._model, id);
 	}
 

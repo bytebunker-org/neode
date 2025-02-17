@@ -1,5 +1,5 @@
 /* eslint indent: 0 */
-import neo4j, { type Integer } from "neo4j-driver";
+import neo4j from "neo4j-driver";
 import type { Model } from "./Model.js";
 import type { Node } from "./Node.js";
 import type { NodeCollection } from "./NodeCollection.js";
@@ -75,23 +75,14 @@ export function valueToCypher(property: Property, value: unknown): unknown {
 
 export abstract class Entity<T extends Record<string, unknown>> {
 	/**
-	 * Get Internal Node ID
+	 * Get Internal Node Element ID
 	 */
-	public abstract get id(): number;
-
-	/**
-	 * Return internal ID as a Neo4j Integer
-	 */
-	public abstract get identity(): Integer;
+	public abstract get id(): string;
 
 	/**
 	 * Get the Model or RelationshipType for this Entity
 	 */
 	public abstract get model(): Model<T> | RelationshipType<T>;
-
-	protected abstract get internalProperties(): EntityPropertyMap<T>;
-
-	protected abstract get internalEagerProperties(): EagerMap<T> | undefined;
 
 	/**
 	 * Return the Node's properties as an Object
@@ -116,6 +107,10 @@ export abstract class Entity<T extends Record<string, unknown>> {
 
 		return output;
 	}
+
+	protected abstract get internalProperties(): EntityPropertyMap<T>;
+
+	protected abstract get internalEagerProperties(): EagerMap<T> | undefined;
 
 	/**
 	 * Get a property for this node

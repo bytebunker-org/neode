@@ -544,14 +544,14 @@ export class Neode {
 	}
 
 	/**
-	 * Find a Node by its internal node ID
+	 * Find a Node by its internal node element ID
 	 *
 	 * @param label
 	 * @param id
 	 */
 	public findById<T extends Record<string, unknown>>(
 		label: string,
-		id: number,
+		id: string,
 	): Promise<Node<T> | undefined> {
 		return this.model<T>(label).findById(id);
 	}

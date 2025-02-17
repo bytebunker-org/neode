@@ -43,8 +43,8 @@ export async function RelateTo<
 	const type = relationship.relationship;
 
 	const params: Record<string, unknown> = {
-		from_id: from.identity,
-		to_id: to.identity,
+		fromId: from.id,
+		toId: to.id,
 	};
 	let set = "";
 
@@ -63,8 +63,8 @@ export async function RelateTo<
 
 	const query = `
                 MATCH (from), (to)
-                WHERE id(from) = $from_id
-                AND id(to) = $to_id
+                WHERE elementId(from) = $fromId
+                AND elementId(to) = $toId
                 ${mode} (from)${directionId}-[rel:${type}]-${directionOut}(to)
                 ${set}
                 RETURN rel
@@ -89,7 +89,7 @@ export async function RelateTo<
 	return new Relationship<R, S | E, S | E>(
 		neode,
 		relationship,
-		relation.identity,
+		relation.elementId,
 		relation.type,
 		relationProperties,
 		hydrateFrom,

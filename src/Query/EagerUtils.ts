@@ -99,7 +99,7 @@ export function eagerNode<T extends Record<string, unknown>>(
 	pattern += `\n${indent}${indent}.*`;
 
 	// ID
-	pattern += `\n${indent}${indent},${EAGER_ID}: id(${alias})`;
+	pattern += `\n${indent}${indent},${EAGER_ID}: elementId(${alias})`;
 
 	// Labels
 	pattern += `\n${indent}${indent},${EAGER_LABELS}: labels(${alias})`;
@@ -142,7 +142,7 @@ export function eagerRelationship<T extends Record<string, unknown>>(
 	pattern += `\n${indent}${indent}.*`;
 
 	// ID
-	pattern += `\n${indent}${indent},${EAGER_ID}: id(${alias})`;
+	pattern += `\n${indent}${indent},${EAGER_ID}: elementId(${alias})`;
 
 	// Type
 	pattern += `\n${indent}${indent},${EAGER_TYPE}: type(${alias})`;

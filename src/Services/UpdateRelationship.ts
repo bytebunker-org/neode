@@ -7,12 +7,12 @@ import { Validator } from "./Validator.js";
 export async function UpdateRelationship<T extends Record<string, unknown>>(
 	neode: Neode,
 	model: RelationshipType<T>,
-	identity: Integerable,
+	identity: string,
 	properties: Partial<T>,
 ) {
 	const query = `
         MATCH ()-[rel]->()
-        WHERE id(rel) = $identity
+        WHERE elementId(rel) = $identity
         SET rel += $properties
         RETURN properties(rel) as properties
     `;

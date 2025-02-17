@@ -22,7 +22,7 @@ export class Relationship<
 > extends Entity<T> {
 	private readonly _neode: Neode;
 	private readonly _definition: RelationshipType<T>;
-	private readonly _identity: Integerable;
+	private readonly _identity: string;
 	private readonly _type: string;
 	private readonly _properties: EntityPropertyMap<T>;
 	private readonly _start: Node<S>;
@@ -34,7 +34,7 @@ export class Relationship<
 	 *
 	 * @param neode Neode instance
 	 * @param definition Relationship type definition
-	 * @param identity Identity
+	 * @param identity Internal Neo4j Element ID
 	 * @param type Relationship type
 	 * @param properties Map of properties for the relationship
 	 * @param start Start Node
@@ -44,7 +44,7 @@ export class Relationship<
 	constructor(
 		neode: Neode,
 		definition: RelationshipType<T>,
-		identity: Integerable,
+		identity: string,
 		type: string,
 		properties: EntityPropertyMap<T> | undefined,
 		start: Node<S>,
@@ -78,17 +78,10 @@ export class Relationship<
 	}
 
 	/**
-	 * Get Internal Relationship ID
+	 * Get Internal Relationship Element ID
 	 */
-	public override get id(): number {
-		return toJSInteger(this._identity);
-	}
-
-	/**
-	 * Get Internal Relationship ID
-	 */
-	public override get identity(): Integer {
-		return toNeo4jInteger(this._identity);
+	public override get id(): string {
+		return this._identity;
 	}
 
 	public override get model(): RelationshipType<T> {
@@ -193,7 +186,7 @@ export class Relationship<
 	 * Delete this relationship from the Graph
 	 */
 	public async delete(): Promise<this> {
-		await DeleteRelationship(this._neode, this.identity);
+		await DeleteRelationship(this._neode, this.id);
 		this._deleted = true;
 
 		return this;

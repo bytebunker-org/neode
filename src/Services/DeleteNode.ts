@@ -110,13 +110,13 @@ function addDetachNode(neode, builder, from_alias, relationship, aliases) {
  * Cascade Delete a Node
  *
  * @param neode Neode instance
- * @param identity Neo4j internal ID of node to delete
+ * @param identity Neo4j internal element ID of node to delete
  * @param model Model definition
  * @param toDepth Maximum deletion depth
  */
 export async function DeleteNode<T extends Record<string, unknown>>(
 	neode: Neode,
-	identity: Integerable,
+	identity: string,
 	model: Model<T>,
 	toDepth = MAX_EAGER_DEPTH,
 ): Promise<QueryResult> {

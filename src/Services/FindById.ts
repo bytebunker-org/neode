@@ -3,12 +3,11 @@ import type { Neode } from "../Neode.js";
 import type { Node } from "../Node.js";
 import { Builder, QueryMode } from "../Query/Builder.js";
 import { eagerNode } from "../Query/EagerUtils.js";
-import type { Integerable } from "../types.js";
 
 export async function FindById<T extends Record<string, unknown>>(
 	neode: Neode,
 	model: Model<T>,
-	id: Integerable,
+	id: string,
 ): Promise<Node<T> | undefined> {
 	const alias = "this";
 

@@ -21,7 +21,7 @@ import { hasOwn, toJSInteger, toNeo4jInteger } from "./util/util.js";
 export class Node<T extends Record<string, unknown>> extends Entity<T> {
 	private readonly _neode: Neode;
 	private readonly _model: Model<T>;
-	private readonly _identity: Integerable;
+	private readonly _identity: string;
 	private readonly _labels: string[];
 	private readonly _properties: EntityPropertyMap<T>;
 	private readonly _eager: EagerMap<T>;
@@ -33,7 +33,7 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 	 *
 	 * @param neode Neode Instance
 	 * @param model Model definition
-	 * @param identity Internal Node ID
+	 * @param identity Internal Node Element ID
 	 * @param labels Node labels
 	 * @param properties Property Map
 	 * @param eager Eagerly loaded values
@@ -41,7 +41,7 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 	constructor(
 		neode: Neode,
 		model: Model<T>,
-		identity: Integerable,
+		identity: string,
 		labels: string[],
 		properties = new Map() as EntityPropertyMap<T>,
 		eager = new Map() as EagerMap<T>,
@@ -57,17 +57,10 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 	}
 
 	/**
-	 * Get Internal Node ID
+	 * Get Internal Node Element ID
 	 */
-	public override get id(): number {
-		return toJSInteger(this._identity);
-	}
-
-	/**
-	 * Get Internal Node ID
-	 */
-	public override get identity(): Integer {
-		return toNeo4jInteger(this._identity);
+	public override get id(): string {
+		return this._identity;
 	}
 
 	/**
