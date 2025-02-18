@@ -7,8 +7,26 @@
 	"module": "lib/index.js",
 	"types": "lib/index.d.ts",
 	"exports": {
-		"import": "./lib/index.js",
-		"types": "./lib/index.d.ts"
+		".": {
+			"import": "./lib/index.js",
+			"types": "./lib/index.d.ts"
+		},
+		"./logger": {
+			"import": "./lib/logger/index.js",
+			"types": "./lib/logger/index.d.ts"
+		},
+		"./query": {
+			"import": "./lib/query/index.js",
+			"types": "./lib/query/index.d.ts"
+		},
+		"./types": {
+			"import": "./lib/types/index.js",
+			"types": "./lib/types/index.d.ts"
+		},
+		"./util": {
+			"import": "./lib/util/index.js",
+			"types": "./lib/util/index.d.ts"
+		}
 	},
 	"files": ["lib/"],
 	"scripts": {
