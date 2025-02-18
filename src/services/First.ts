@@ -4,31 +4,12 @@ import type { Node } from "../Node.js";
 import { Builder, QueryMode } from "../query/Builder.js";
 import { eagerNode } from "../query/EagerUtils.js";
 
-export function First<T extends Record<string, unknown>>(
-	neode: Neode,
-	model: Model<T> | string,
-	key: keyof T & string,
-	value: unknown,
-): Promise<Node<T> | undefined>;
-
-export function First<T extends Record<string, unknown>>(
-	neode: Neode,
-	model: Model<T> | string,
-	properties: Partial<T>,
-): Promise<Node<T> | undefined>;
-
 export async function First<T extends Record<string, unknown>>(
 	neode: Neode,
 	model: Model<T> | string,
 	keyOrObject: (keyof T & string) | Partial<T>,
-	value?: unknown,
-): Promise<Node<T> | undefined>;
-
-export async function First<T extends Record<string, unknown>>(
-	neode: Neode,
-	model: Model<T> | string,
-	keyOrObject: (keyof T & string) | Partial<T>,
-	value?: unknown,
+	value: unknown | undefined,
+	throwOnMissing: boolean,
 ): Promise<Node<T> | undefined> {
 	const alias = "this";
 
@@ -56,5 +37,5 @@ export async function First<T extends Record<string, unknown>>(
 		.limit(1)
 		.execute(QueryMode.READ);
 
-	return neode.hydrateFirst(result, alias, model);
+	return neode.hydrateFirst(result, alias, model, throwOnMissing as false);
 }

@@ -11,6 +11,7 @@ import {
 } from "./RelationshipType.js";
 import { EAGER_ID, EAGER_LABELS, EAGER_TYPE } from "./query/EagerUtils.js";
 import type { EntityPropertyMap } from "./types/schemaTypes.js";
+import { NotFoundError } from "./util/NotFoundError.js";
 import { hasOwn } from "./util/util.js";
 
 interface RawDataRecord extends Record<string, unknown> {
@@ -28,17 +29,23 @@ export class Factory {
 	 * @param result Neo4j Result
 	 * @param alias Alias of Node to pluck
 	 * @param definition
+	 * @param throwOnMissing
 	 */
 	public hydrateFirst<T extends Record<string, unknown>>(
 		result: QueryResult | undefined,
 		alias: string,
-		definition?: Model<T> | string,
+		definition: Model<T> | string | undefined,
+		throwOnMissing: boolean,
 	): Node<T> | undefined {
 		const firstResult: RawDataRecord | undefined =
 			result?.records?.[0]?.get(alias);
 
 		if (!firstResult) {
-			return undefined;
+			if (throwOnMissing) {
+				throw new NotFoundError<T>(alias, definition);
+			} else {
+				return undefined;
+			}
 		}
 
 		return this.hydrateNode(firstResult, definition);

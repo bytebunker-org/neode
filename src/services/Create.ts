@@ -11,7 +11,7 @@ export async function Create<T extends Record<string, unknown>>(
 	neode: Neode,
 	model: Model<T>,
 	properties: Partial<T>,
-): Promise<Node<T> | undefined> {
+): Promise<Node<T>> {
 	const propertiesWithDefaults = GenerateDefaultValues(
 		neode,
 		model,

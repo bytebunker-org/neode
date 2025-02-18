@@ -1,6 +1,6 @@
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
-import type { Node } from "../Node.js";
+import type { NodeCollection } from "../NodeCollection.js";
 import { Builder, QueryMode } from "../query/Builder.js";
 import { eagerNode } from "../query/EagerUtils.js";
 import { OrderDirectionEnum } from "../query/Order.js";
@@ -12,7 +12,7 @@ export async function FindAll<T extends Record<string, unknown>>(
 	order?: string | Record<string, OrderDirectionEnum>,
 	limit?: number,
 	skip?: number,
-): Promise<Node<T>[]> {
+): Promise<NodeCollection<T>> {
 	const alias = "this";
 
 	const builder = new Builder(neode);

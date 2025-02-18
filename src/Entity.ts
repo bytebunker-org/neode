@@ -85,8 +85,6 @@ export abstract class Entity<T extends Record<string, unknown>> {
 
 	/**
 	 * Return the Node's properties as an Object
-	 *
-	 * @return {Object}
 	 */
 	public get properties(): T {
 		const output = {} as T;

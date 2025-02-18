@@ -1,11 +1,11 @@
 import { config as dotenvConfig } from "dotenv";
 import neo4j, {
+	type Config as Neo4jConfig,
 	type Driver,
 	type QueryResult,
 	type RecordShape,
 	type Session,
 	type Transaction,
-	type Config as Neo4jConfig,
 } from "neo4j-driver";
 import { Factory } from "./Factory.js";
 import { Model } from "./Model.js";
@@ -300,7 +300,7 @@ export class Neode {
 	public create<T extends Record<string, unknown>>(
 		model: string,
 		properties: Partial<T>,
-	): Promise<Node<T> | undefined> {
+	): Promise<Node<T>> {
 		return this.model<T>(model).create(properties);
 	}
 
@@ -310,7 +310,7 @@ export class Neode {
 	public merge<T extends Record<string, unknown>>(
 		model: string,
 		properties: Partial<T>,
-	): Promise<Node<T> | undefined> {
+	): Promise<Node<T>> {
 		return this.model<T>(model).merge(properties);
 	}
 
@@ -325,7 +325,7 @@ export class Neode {
 		model: string,
 		match: Partial<T>,
 		set: Partial<T>,
-	): Promise<Node<T> | undefined> {
+	): Promise<Node<T>> {
 		return this.model<T>(model).mergeOn(match, set);
 	}
 
@@ -576,7 +576,7 @@ export class Neode {
 			| Record<keyof T & string, OrderDirectionEnum>,
 		limit?: number,
 		skip?: number,
-	): Promise<Node<T>[]> {
+	): Promise<NodeCollection<T>> {
 		return this.model<T>(label).all(properties, order, limit, skip);
 	}
 
@@ -589,8 +589,25 @@ export class Neode {
 	public find<T extends Record<string, unknown>>(
 		label: string,
 		id: string | number,
+	): Promise<Node<T> | undefined>;
+	/**
+	 * Find a Node by its label and primary key
+	 *
+	 * @param label
+	 * @param id
+	 * @param throwOnMissing Throw an error if the node is not found
+	 */
+	public find<T extends Record<string, unknown>>(
+		label: string,
+		id: string | number,
+		throwOnMissing: false,
+	): Promise<Node<T> | undefined>;
+	public find<T extends Record<string, unknown>>(
+		label: string,
+		id: string | number,
+		throwOnMissing = true,
 	): Promise<Node<T> | undefined> {
-		return this.model<T>(label).find(id);
+		return this.model<T>(label).find(id, throwOnMissing as false);
 	}
 
 	/**
@@ -602,8 +619,25 @@ export class Neode {
 	public findById<T extends Record<string, unknown>>(
 		label: string,
 		id: string,
+	): Promise<Node<T>>;
+	/**
+	 * Find a Node by its internal node element ID
+	 *
+	 * @param label
+	 * @param id
+	 * @param throwOnMissing Throw an error if the node is not found
+	 */
+	public findById<T extends Record<string, unknown>>(
+		label: string,
+		id: string,
+		throwOnMissing: false,
+	): Promise<Node<T> | undefined>;
+	public findById<T extends Record<string, unknown>>(
+		label: string,
+		id: string,
+		throwOnMissing = true,
 	): Promise<Node<T> | undefined> {
-		return this.model<T>(label).findById(id);
+		return this.model<T>(label).findById(id, throwOnMissing as false);
 	}
 
 	/**
@@ -617,17 +651,52 @@ export class Neode {
 		label: string,
 		key: keyof T & string,
 		value: unknown,
+	): Promise<Node<T>>;
+	/**
+	 * Find a Node by properties
+	 *
+	 * @param label
+	 * @param key Either a string for the property name or an object of values
+	 * @param value Value
+	 * @param throwOnMissing Throw an error if the node is not found
+	 */
+	public first<T extends Record<string, unknown>>(
+		label: string,
+		key: keyof T & string,
+		value: unknown,
+		throwOnMissing: false,
 	): Promise<Node<T> | undefined>;
+	/**
+	 * Find a Node by properties
+	 *
+	 * @param label
+	 * @param properties An object of key/value pairs to match
+	 */
 	public first<T extends Record<string, unknown>>(
 		label: string,
 		properties: Partial<T>,
+	): Promise<Node<T>>;
+	/**
+	 * Find a Node by properties
+	 *
+	 * @param label
+	 * @param properties An object of key/value pairs to match
+	 * @param value Set to undefined when passing an object
+	 * @param throwOnMissing Throw an error if the node is not found
+	 */
+	public first<T extends Record<string, unknown>>(
+		label: string,
+		properties: Partial<T>,
+		value: undefined,
+		throwOnMissing: false,
 	): Promise<Node<T> | undefined>;
 	public first<T extends Record<string, unknown>>(
 		label: string,
 		keyOrObject: (keyof T & string) | Partial<T>,
 		value?: unknown,
+		throwOnMissing = true,
 	) {
-		return this.model<T>(label).first(keyOrObject, value);
+		return this.model<T>(label).first(keyOrObject, value, throwOnMissing);
 	}
 
 	/**
@@ -652,12 +721,39 @@ export class Neode {
 	 * @param alias Alias of Node to pluck
 	 * @param definition Expected schema of the node
 	 */
-	hydrateFirst<T extends Record<string, unknown>>(
+	public hydrateFirst<T extends Record<string, unknown>>(
 		result: QueryResult,
 		alias: string,
 		definition?: Model<T> | string,
-	) {
-		return this.factory.hydrateFirst(result, alias, definition);
+	): Node<T>;
+
+	/**
+	 * Hydrate the first record in a result set
+	 *
+	 * @param result Neo4j Result
+	 * @param alias Alias of Node to pluck
+	 * @param definition Expected schema of the node
+	 * @param throwOnMissing Throw an error if the node is not found
+	 */
+	public hydrateFirst<T extends Record<string, unknown>>(
+		result: QueryResult,
+		alias: string,
+		definition: Model<T> | string | undefined,
+		throwOnMissing: false,
+	): Node<T> | undefined;
+
+	public hydrateFirst<T extends Record<string, unknown>>(
+		result: QueryResult,
+		alias: string,
+		definition?: Model<T> | string,
+		throwOnMissing = true,
+	): Node<T> | undefined {
+		return this.factory.hydrateFirst(
+			result,
+			alias,
+			definition,
+			throwOnMissing,
+		) as Node<T>;
 	}
 
 	/**

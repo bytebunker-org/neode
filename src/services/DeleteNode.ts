@@ -1,4 +1,4 @@
-import type { Integer, QueryResult } from "neo4j-driver";
+import type { QueryResult } from "neo4j-driver";
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
 import {
@@ -6,7 +6,6 @@ import {
 	type RelationshipType,
 } from "../RelationshipType.js";
 import { Builder, QueryMode } from "../query/Builder.js";
-import type { Integerable } from "../types/generalTypes.js";
 
 export const MAX_EAGER_DEPTH = 10;
 

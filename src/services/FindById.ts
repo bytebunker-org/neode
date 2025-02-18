@@ -8,6 +8,7 @@ export async function FindById<T extends Record<string, unknown>>(
 	neode: Neode,
 	model: Model<T>,
 	id: string,
+	throwOnMissing: boolean,
 ): Promise<Node<T> | undefined> {
 	const alias = "this";
 
@@ -20,5 +21,5 @@ export async function FindById<T extends Record<string, unknown>>(
 		.limit(1)
 		.execute(QueryMode.READ);
 
-	return neode.hydrateFirst(result, alias, model);
+	return neode.hydrateFirst(result, alias, model, throwOnMissing as false);
 }
