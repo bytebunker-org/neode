@@ -299,7 +299,7 @@ export class Neode {
 	 */
 	public create<T extends Record<string, unknown>>(
 		model: string,
-		properties: T,
+		properties: Partial<T>,
 	): Promise<Node<T> | undefined> {
 		return this.model<T>(model).create(properties);
 	}
@@ -309,7 +309,7 @@ export class Neode {
 	 */
 	public merge<T extends Record<string, unknown>>(
 		model: string,
-		properties: T,
+		properties: Partial<T>,
 	): Promise<Node<T> | undefined> {
 		return this.model<T>(model).merge(properties);
 	}

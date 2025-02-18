@@ -10,7 +10,7 @@ import { ORIGINAL_ALIAS, addNodeToStatement } from "./WriteUtils.js";
 export async function Create<T extends Record<string, unknown>>(
 	neode: Neode,
 	model: Model<T>,
-	properties: T,
+	properties: Partial<T>,
 ): Promise<Node<T> | undefined> {
 	const propertiesWithDefaults = GenerateDefaultValues(
 		neode,

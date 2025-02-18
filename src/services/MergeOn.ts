@@ -11,7 +11,7 @@ export async function MergeOn<T extends Record<string, unknown>>(
 	neode: Neode,
 	model: Model<T>,
 	mergeOn: (keyof T & string)[],
-	properties: T,
+	properties: Partial<T>,
 ): Promise<Node<T> | undefined> {
 	const defaultedProperties = GenerateDefaultValues(neode, model, properties);
 	const validatedProperties = await Validator(

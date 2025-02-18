@@ -32,7 +32,7 @@ export class Queryable<T extends Record<string, unknown>> {
 	/**
 	 * Create a new instance of this Model
 	 */
-	public create(properties: T): Promise<Node<T> | undefined> {
+	public create(properties: Partial<T>): Promise<Node<T> | undefined> {
 		return Create<T>(this._neode, this._model, properties);
 	}
 
@@ -41,7 +41,7 @@ export class Queryable<T extends Record<string, unknown>> {
 	 *
 	 * @param properties
 	 */
-	public merge(properties: T): Promise<Node<T> | undefined> {
+	public merge(properties: Partial<T>): Promise<Node<T> | undefined> {
 		const mergeOn = this._model.mergeFields;
 
 		return MergeOn(this._neode, this._model, mergeOn, properties);
