@@ -1,5 +1,6 @@
 import { RelationshipDirectionEnum } from "../src/RelationshipType.js";
 import type {
+	InferGraphEntityType,
 	OtherNodeProperties,
 	RelationshipNodeProperties,
 	SchemaObject,
@@ -35,3 +36,5 @@ export const PersonSchema = {
 		default: () => new Date(),
 	},
 } satisfies SchemaObject;
+
+export type PersonType = InferGraphEntityType<typeof PersonSchema>;

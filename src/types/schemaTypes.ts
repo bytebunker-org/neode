@@ -12,8 +12,8 @@ export type TemporalPropertyTypes =
 	| "localtime"
 	| "duration";
 export type NumberPropertyTypes = "number" | "int" | "integer" | "float";
-export type RelationshipPropertyTypes = "relationship" | "relationships";
 export type NodesPropertyTypes = "node" | "nodes";
+export type RelationshipPropertyTypes = "relationship" | "relationships";
 export type StringPropertyTypes = "string" | "uuid";
 export type PropertyTypes =
 	| TemporalPropertyTypes
@@ -144,6 +144,8 @@ export interface StringNodeProperties
 
 export interface BaseRelationshipNodeProperties
 	extends BaseNodeProperties<unknown> {
+	type: NodesPropertyTypes | RelationshipPropertyTypes;
+
 	/**
 	 * Neo4J Relationship name (e.g: ACTED_IN)
 	 */
