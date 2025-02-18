@@ -12,6 +12,13 @@ export class CombinedLogger implements Logger {
 	public logError = this.callLoggers("logError");
 	public logMessage = this.callLoggers("logMessage");
 
+	/**
+	 * Create a combined logger which redirects all received log messages to multiple loggers
+	 *
+	 * @param loggers an array of loggers which should receive every message. The order of the loggers is important if `callOnlyFirstLogger` is true
+	 * @param callOnlyFirstLogger if true, only the first logger which handles the message
+	 * (doesn't ignore the message for example because of the log level) will be called
+	 */
 	constructor(
 		private readonly loggers: Logger[],
 		private readonly callOnlyFirstLogger = false,

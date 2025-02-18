@@ -1,4 +1,4 @@
-export { Neode } from "./Neode.js";
+export { Neode, type NeodeOptions } from "./Neode.js";
 export { Model } from "./Model.js";
 export { ModelMap } from "./ModelMap.js";
 export { Node } from "./Node.js";

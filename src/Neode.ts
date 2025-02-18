@@ -5,6 +5,7 @@ import neo4j, {
 	type RecordShape,
 	type Session,
 	type Transaction,
+	type Config as Neo4jConfig,
 } from "neo4j-driver";
 import { Factory } from "./Factory.js";
 import { Model } from "./Model.js";
@@ -22,17 +23,55 @@ import type { SchemaObject } from "./types/schemaTypes.js";
 import { QueryError } from "./util/QueryError.js";
 import { TransactionError } from "./util/TransactionError.js";
 
-interface NeodeOptions {
+/**
+ * Configuration options for creating a Neode instance.
+ */
+export interface NeodeOptions {
+	/**
+	 * The connection string for the Neo4j database.
+	 *
+	 * @example bolt://127.0.0.1:7687
+	 */
 	connectionString: string;
-	username?: string;
-	password?: string;
-	enterprise: boolean;
-	database?: string;
-	driverConfig?: Record<string, unknown>;
 
+	/**
+	 * The username for database authentication.
+	 */
+	username?: string;
+
+	/**
+	 * The password for database authentication.
+	 */
+	password?: string;
+
+	/**
+	 * Whether to use Neo4j Enterprise features.
+	 *
+	 * @see Compare the differences at https://neo4j.com/pricing
+	 */
+	enterprise: boolean;
+
+	/**
+	 * The name of the database to connect to.
+	 */
+	database?: string;
+
+	/**
+	 * Additional configuration options for the Neo4j driver.
+	 *
+	 * @see {@link Neo4jConfig}
+	 */
+	driverConfig?: Neo4jConfig;
+
+	/**
+	 * Logging configuration options.
+	 */
 	logging?: LoggerOptions;
 }
 
+/**
+ * The main class for interacting with Neo4j using the Neode OGM.
+ */
 export class Neode {
 	private readonly _schema: Schema;
 	private readonly _driver: Driver;
@@ -43,6 +82,10 @@ export class Neode {
 
 	private _logger!: Logger;
 
+	/**
+	 * Creates a new Neode instance.
+	 * @param options Configuration options for connecting to Neo4j, Neode and the neo4j-driver.
+	 */
 	constructor(options: NeodeOptions) {
 		const auth =
 			options.username && options.password
@@ -92,8 +135,6 @@ export class Neode {
 	/**
 	 * @static
 	 * Generate Neode instance using .env configuration
-	 *
-	 * @return {Neode}
 	 */
 	public static fromEnv(): Neode {
 		dotenvConfig();
