@@ -17,7 +17,8 @@ import type { Logger, LoggerOptions } from "./logger/Logger.js";
 import { createLogger } from "./logger/LoggerFactory.js";
 import { Builder, QueryMode } from "./query/Builder.js";
 import type { OrderDirectionEnum } from "./query/Order.js";
-import type { Query, QueryParams, SchemaObject } from "./types.js";
+import type { Query, QueryParams } from "./types/generalTypes.js";
+import type { SchemaObject } from "./types/schemaTypes.js";
 import { QueryError } from "./util/QueryError.js";
 import { TransactionError } from "./util/TransactionError.js";
 

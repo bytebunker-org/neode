@@ -2,7 +2,7 @@ import { v4 as uuidV4 } from "uuid";
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
 import type { RelationshipType } from "../RelationshipType.js";
-import type { NodePropertyObject } from "../types.js";
+import type { NodePropertyObject } from "../types/schemaTypes.js";
 import { ValidationError } from "../util/ValidationError.js";
 import { CleanValue } from "./CleanValue.js";
 

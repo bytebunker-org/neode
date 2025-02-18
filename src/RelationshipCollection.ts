@@ -1,6 +1,6 @@
 import type { Neode } from "./Neode.js";
 import type { Relationship } from "./Relationship.js";
-import type { SerializedGraph } from "./types.js";
+import type { SerializedGraph } from "./types/generalTypes.js";
 
 export class RelationshipCollection<
 	T extends Record<string, unknown>,

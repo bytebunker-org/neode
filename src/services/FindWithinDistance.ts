@@ -4,7 +4,7 @@ import type { NodeCollection } from "../NodeCollection.js";
 import { Builder, QueryMode } from "../query/Builder.js";
 import { eagerNode } from "../query/EagerUtils.js";
 import { OrderDirectionEnum } from "../query/Order.js";
-import type { PointObject } from "../types.js";
+import type { PointObject } from "../types/generalTypes.js";
 import { hasOwn } from "../util/util.js";
 
 export async function FindWithinDistance<

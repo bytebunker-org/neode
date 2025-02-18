@@ -12,7 +12,7 @@ import { FindById } from "./services/FindById.js";
 import { FindWithinDistance } from "./services/FindWithinDistance.js";
 import { First } from "./services/First.js";
 import { MergeOn } from "./services/MergeOn.js";
-import type { Integerable, PointObject } from "./types.js";
+import type { PointObject } from "./types/generalTypes.js";
 
 export class Queryable<T extends Record<string, unknown>> {
 	private readonly _neode: Neode;

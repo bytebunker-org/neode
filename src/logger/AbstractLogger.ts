@@ -1,6 +1,6 @@
 import type { QueryResult } from "neo4j-driver";
 import { serializeError } from "serialize-error";
-import type { Query } from "../types.js";
+import type { Query } from "../types/generalTypes.js";
 import { hasOwn } from "../util/util.js";
 import type {
 	LogLevel,

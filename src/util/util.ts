@@ -1,5 +1,5 @@
 import { Integer } from "neo4j-driver";
-import type { Integerable } from "../types.js";
+import type { Integerable } from "../types/generalTypes.js";
 
 export function hasOwn<X, Y extends PropertyKey>(
 	object: X,

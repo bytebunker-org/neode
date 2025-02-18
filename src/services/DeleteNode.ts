@@ -6,7 +6,7 @@ import {
 	type RelationshipType,
 } from "../RelationshipType.js";
 import { Builder, QueryMode } from "../query/Builder.js";
-import type { Integerable } from "../types.js";
+import type { Integerable } from "../types/generalTypes.js";
 
 export const MAX_EAGER_DEPTH = 10;
 

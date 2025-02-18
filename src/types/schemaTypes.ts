@@ -1,11 +1,8 @@
 import type Joi from "joi";
-import type { Integer } from "neo4j-driver";
 import type {
 	RelationshipCascadePolicyEnum,
 	RelationshipDirectionEnum,
-} from "./RelationshipType.js";
-
-type PropertyType = string | number | boolean;
+} from "../RelationshipType.js";
 
 export type TemporalPropertyTypes =
 	| "datetime"
@@ -221,42 +218,5 @@ export interface SchemaObject {
 	labels?: string[];
 }
 
-export type RelationshipSchema = {
-	[index: string]: BaseRelationshipNodeProperties;
-};
-
-export type QueryParams = Record<string, unknown>;
-export type Query = string | { text: string; parameters?: QueryParams };
-
 export type EntityPropertyMap<T extends Record<string, unknown>> =
 	T extends Record<infer K, infer V> ? Map<K, V> : never;
-
-export interface SerializedGraph {
-	_id: string;
-	_labels?: string[];
-	type?: string;
-
-	[x: string]: unknown;
-}
-
-export type Integerable =
-	| number
-	| string
-	| Integer
-	| {
-			low: number;
-			high: number;
-	  }
-	| bigint;
-
-export type PointObject =
-	| {
-			x: number;
-			y: number;
-			z?: number;
-	  }
-	| {
-			latitude: number;
-			longitude: number;
-			height?: number;
-	  };

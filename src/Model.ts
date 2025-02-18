@@ -7,14 +7,13 @@ import {
 	RelationshipType,
 } from "./RelationshipType.js";
 import type {
-	EntityPropertyMap,
 	NodeProperty,
 	NodesPropertyTypes,
 	PropertyTypes,
 	RelationshipLikePropertyObject,
 	RelationshipPropertyTypes,
 	SchemaObject,
-} from "./types.js";
+} from "./types/schemaTypes.js";
 
 const RELATIONSHIP_TYPES: PropertyTypes[] = [
 	"relationship",
@@ -128,19 +127,68 @@ export class Model<T extends Record<string, unknown>> extends Queryable<T> {
 	}
 
 	/**
+	 * Get Labels
+	 */
+	public get labels(): string[] {
+		return this._labels;
+	}
+
+	/**
+	 * Get all defined Relationships  for this Model
+	 */
+	public get relationships(): Map<
+		string,
+		RelationshipType<Record<string, unknown>>
+	> {
+		return this._relationships;
+	}
+
+	/**
+	 * Get relationships defined as Eager relationships
+	 */
+	public get eager(): RelationshipType<Record<string, unknown>>[] {
+		return Array.from(this._relationships.values()).filter(
+			(relationship) => relationship.eager,
+		);
+	}
+
+	/**
+	 * Get the name of the primary key
+	 */
+	public get primaryKey(): keyof T & string {
+		return this._primaryKey;
+	}
+
+	/**
+	 * Get array of hidden fields
+	 *
+	 * @return {String[]}
+	 */
+	public get hidden(): string[] {
+		return this._hidden;
+	}
+
+	/**
+	 * Get array of indexed fields
+	 */
+	public get indexes(): string[] {
+		return this._indexed;
+	}
+
+	/**
+	 * Get defined merge fields
+	 */
+	public get mergeFields(): string[] {
+		return this._unique.concat(this._indexed);
+	}
+
+	/**
 	 * Set Labels
 	 */
 	setLabels(...labels: string[]): this {
 		this._labels = labels.sort();
 
 		return this;
-	}
-
-	/**
-	 * Get Labels
-	 */
-	public get labels(): string[] {
-		return this._labels;
 	}
 
 	/**
@@ -224,54 +272,5 @@ export class Model<T extends Record<string, unknown>> extends Queryable<T> {
 		}
 
 		return this._relationships.get(name);
-	}
-
-	/**
-	 * Get all defined Relationships  for this Model
-	 */
-	public get relationships(): Map<
-		string,
-		RelationshipType<Record<string, unknown>>
-	> {
-		return this._relationships;
-	}
-
-	/**
-	 * Get relationships defined as Eager relationships
-	 */
-	public get eager(): RelationshipType<Record<string, unknown>>[] {
-		return Array.from(this._relationships.values()).filter(
-			(relationship) => relationship.eager,
-		);
-	}
-
-	/**
-	 * Get the name of the primary key
-	 */
-	public get primaryKey(): keyof T & string {
-		return this._primaryKey;
-	}
-
-	/**
-	 * Get array of hidden fields
-	 *
-	 * @return {String[]}
-	 */
-	public get hidden(): string[] {
-		return this._hidden;
-	}
-
-	/**
-	 * Get array of indexed fields
-	 */
-	public get indexes(): string[] {
-		return this._indexed;
-	}
-
-	/**
-	 * Get defined merge fields
-	 */
-	public get mergeFields(): string[] {
-		return this._unique.concat(this._indexed);
 	}
 }

@@ -1,10 +1,9 @@
 import { RelationshipDirectionEnum } from "../src/RelationshipType.js";
 import type {
-	NodePropertyObject,
 	OtherNodeProperties,
 	RelationshipNodeProperties,
 	SchemaObject,
-} from "../src/types.js";
+} from "../src/types/index.js";
 
 /**
  * Person Definition

@@ -1,5 +1,5 @@
 import type { QueryResult } from "neo4j-driver";
-import type { Query } from "../types.js";
+import type { Query } from "../types/generalTypes.js";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 export type LogType = "query" | "query-result" | "query-error" | "schema";

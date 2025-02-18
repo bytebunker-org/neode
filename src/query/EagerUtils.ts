@@ -2,7 +2,6 @@ import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
 import type { RelationshipType } from "../RelationshipType.js";
 import { Builder } from "./Builder.js";
-/* eslint-disable no-empty */
 
 export const EAGER_ID = "__EAGER_ID__";
 export const EAGER_LABELS = "__EAGER_LABELS__";

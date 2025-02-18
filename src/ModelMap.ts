@@ -1,6 +1,6 @@
 import { Model } from "./Model.js";
 import type { Neode } from "./Neode.js";
-import type { SchemaObject } from "./types.js";
+import type { SchemaObject } from "./types/schemaTypes.js";
 
 export class ModelMap extends Map<string, Model<Record<string, unknown>>> {
 	private readonly _neode: Neode;

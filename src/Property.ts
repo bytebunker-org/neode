@@ -3,7 +3,7 @@ import type {
 	NodeProperty,
 	NodePropertyObject,
 	PropertyTypes,
-} from "./types.js";
+} from "./types/schemaTypes.js";
 
 /**
  *  Container holding information for a property.

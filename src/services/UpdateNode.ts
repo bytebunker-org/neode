@@ -1,6 +1,6 @@
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
-import type { Integerable, NodePropertyObject } from "../types.js";
+import type { NodePropertyObject } from "../types/schemaTypes.js";
 import { CleanValue } from "./CleanValue.js";
 import { Validator } from "./Validator.js";
 

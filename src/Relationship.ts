@@ -1,4 +1,3 @@
-import type { Integer } from "neo4j-driver";
 import { Entity } from "./Entity.js";
 import type { Neode } from "./Neode.js";
 import type { Node } from "./Node.js";
@@ -8,12 +7,9 @@ import {
 } from "./RelationshipType.js";
 import { DeleteRelationship } from "./services/DeleteRelationship.js";
 import { UpdateRelationship } from "./services/UpdateRelationship.js";
-import type {
-	EntityPropertyMap,
-	Integerable,
-	SerializedGraph,
-} from "./types.js";
-import { hasOwn, toJSInteger, toNeo4jInteger } from "./util/util.js";
+import type { SerializedGraph } from "./types/generalTypes.js";
+import type { EntityPropertyMap } from "./types/schemaTypes.js";
+import { hasOwn } from "./util/util.js";
 
 export class Relationship<
 	T extends Record<string, unknown>,
@@ -88,14 +84,6 @@ export class Relationship<
 		return this.definition;
 	}
 
-	protected override get internalProperties(): EntityPropertyMap<T> {
-		return this._properties;
-	}
-
-	protected override get internalEagerProperties(): undefined {
-		return undefined;
-	}
-
 	/**
 	 * Get the start node for this relationship
 	 */
@@ -118,6 +106,14 @@ export class Relationship<
 		return this._definition.direction === RelationshipDirectionEnum.IN
 			? this.startNode
 			: this.endNode;
+	}
+
+	protected override get internalProperties(): EntityPropertyMap<T> {
+		return this._properties;
+	}
+
+	protected override get internalEagerProperties(): undefined {
+		return undefined;
 	}
 
 	/**

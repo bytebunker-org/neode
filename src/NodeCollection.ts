@@ -1,6 +1,6 @@
 import type { Neode } from "./Neode.js";
 import type { Node } from "./Node.js";
-import type { SerializedGraph } from "./types.js";
+import type { SerializedGraph } from "./types/generalTypes.js";
 
 export class NodeCollection<T extends Record<string, unknown>> extends Array<
 	Node<T>

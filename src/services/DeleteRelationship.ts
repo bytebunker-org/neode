@@ -1,4 +1,4 @@
-import type { Integer, QueryResult } from "neo4j-driver";
+import type { QueryResult } from "neo4j-driver";
 import type { Neode } from "../Neode.js";
 
 export function DeleteRelationship(

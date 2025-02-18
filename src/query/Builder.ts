@@ -1,11 +1,10 @@
-import neo4j, { type Result, type Session } from "neo4j-driver";
+import type { Result, Session } from "neo4j-driver";
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
 import type {
 	RelationshipDirectionEnum,
 	RelationshipType,
 } from "../RelationshipType.js";
-import type { Integerable } from "../types.js";
 import type { IStatement } from "./IStatement.js";
 import { Match } from "./Match.js";
 import { Order, type OrderDirectionEnum } from "./Order.js";

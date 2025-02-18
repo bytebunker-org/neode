@@ -1,4 +1,4 @@
-import neo4j, { type QueryResult } from "neo4j-driver";
+import type { QueryResult } from "neo4j-driver";
 import type { Model } from "./Model.js";
 import type { Neode } from "./Neode.js";
 import { Node } from "./Node.js";
@@ -10,7 +10,7 @@ import {
 	type RelationshipType,
 } from "./RelationshipType.js";
 import { EAGER_ID, EAGER_LABELS, EAGER_TYPE } from "./query/EagerUtils.js";
-import type { EntityPropertyMap } from "./types.js";
+import type { EntityPropertyMap } from "./types/schemaTypes.js";
 import { hasOwn } from "./util/util.js";
 
 interface RawDataRecord extends Record<string, unknown> {
@@ -65,6 +65,66 @@ export class Factory {
 		}
 
 		return new NodeCollection(this.neode, nodes);
+	}
+
+	/**
+	 * Take a result object and convert it into a Relationship
+	 *
+	 * @param definition  Relationship type
+	 * @param record      Record object
+	 * @param thisNode   'This' node in the current  context
+	 * @return {Relationship}
+	 */
+	public hydrateRelationship<
+		T extends Record<string, unknown>,
+		S extends Record<string, unknown>,
+		E extends Record<string, unknown>,
+	>(
+		definition: RelationshipType<T>,
+		record: RawDataRecord,
+		thisNode: Node<S>,
+	): Relationship<T, S | E, S | E> {
+		// Get Internals
+		const identity = record[EAGER_ID];
+		const type = record[EAGER_TYPE]!;
+
+		// Get Definition from
+		// const definition = this.getDefinition(labels);
+
+		// Get Properties
+		const properties = new Map() as EntityPropertyMap<T>;
+
+		for (const [key] of definition.properties.entries()) {
+			if (hasOwn(record, key)) {
+				properties.set(key, record[key]);
+			}
+		}
+
+		// Start & End Nodes
+		const otherNode = this.hydrateNode<E>(
+			record[definition.nodeAlias] as RawDataRecord,
+		);
+
+		// Calculate Start & End Nodes
+		const startNode =
+			definition.direction === RelationshipDirectionEnum.IN
+				? (otherNode as Node<S | E>)
+				: (thisNode as Node<S | E>);
+
+		const endNode =
+			definition.direction === RelationshipDirectionEnum.IN
+				? (thisNode as Node<S | E>)
+				: (otherNode as Node<S | E>);
+
+		return new Relationship(
+			this.neode,
+			definition,
+			identity,
+			type,
+			properties,
+			startNode,
+			endNode,
+		);
 	}
 
 	/**
@@ -178,65 +238,5 @@ export class Factory {
 		}
 
 		return node;
-	}
-
-	/**
-	 * Take a result object and convert it into a Relationship
-	 *
-	 * @param definition  Relationship type
-	 * @param record      Record object
-	 * @param thisNode   'This' node in the current  context
-	 * @return {Relationship}
-	 */
-	public hydrateRelationship<
-		T extends Record<string, unknown>,
-		S extends Record<string, unknown>,
-		E extends Record<string, unknown>,
-	>(
-		definition: RelationshipType<T>,
-		record: RawDataRecord,
-		thisNode: Node<S>,
-	): Relationship<T, S | E, S | E> {
-		// Get Internals
-		const identity = record[EAGER_ID];
-		const type = record[EAGER_TYPE]!;
-
-		// Get Definition from
-		// const definition = this.getDefinition(labels);
-
-		// Get Properties
-		const properties = new Map() as EntityPropertyMap<T>;
-
-		for (const [key] of definition.properties.entries()) {
-			if (hasOwn(record, key)) {
-				properties.set(key, record[key]);
-			}
-		}
-
-		// Start & End Nodes
-		const otherNode = this.hydrateNode<E>(
-			record[definition.nodeAlias] as RawDataRecord,
-		);
-
-		// Calculate Start & End Nodes
-		const startNode =
-			definition.direction === RelationshipDirectionEnum.IN
-				? (otherNode as Node<S | E>)
-				: (thisNode as Node<S | E>);
-
-		const endNode =
-			definition.direction === RelationshipDirectionEnum.IN
-				? (thisNode as Node<S | E>)
-				: (otherNode as Node<S | E>);
-
-		return new Relationship(
-			this.neode,
-			definition,
-			identity,
-			type,
-			properties,
-			startNode,
-			endNode,
-		);
 	}
 }

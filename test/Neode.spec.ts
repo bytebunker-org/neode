@@ -7,7 +7,7 @@ import { Relationship } from "../src/Relationship.js";
 import { RelationshipDirectionEnum } from "../src/RelationshipType.js";
 import { Neode } from "../src/index.js";
 import { Builder } from "../src/query/Builder.js";
-import type { Query, SchemaObject } from "../src/types.js";
+import type { Query, SchemaObject } from "../src/types/generalTypes.js";
 import { TransactionError } from "../src/util/TransactionError.js";
 import { testNeodeInstance } from "./instance.js";
 

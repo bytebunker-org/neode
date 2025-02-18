@@ -1,4 +1,3 @@
-/* eslint indent: 0 */
 import neo4j from "neo4j-driver";
 import type { Model } from "./Model.js";
 import type { Node } from "./Node.js";
@@ -7,7 +6,7 @@ import type { Property } from "./Property.js";
 import type { Relationship } from "./Relationship.js";
 import type { RelationshipCollection } from "./RelationshipCollection.js";
 import type { RelationshipType } from "./RelationshipType.js";
-import type { EntityPropertyMap } from "./types.js";
+import type { EntityPropertyMap } from "./types/schemaTypes.js";
 
 export type EagerObject<O extends Record<string, unknown>> =
 	| Node<O>

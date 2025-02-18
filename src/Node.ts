@@ -1,4 +1,4 @@
-import type { Integer, QueryResult } from "neo4j-driver";
+import type { QueryResult } from "neo4j-driver";
 import { type EagerMap, type EagerObject, Entity } from "./Entity.js";
 import type { Model } from "./Model.js";
 import type { Neode } from "./Neode.js";
@@ -8,12 +8,9 @@ import { DeleteNode } from "./services/DeleteNode.js";
 import { DetachFrom } from "./services/DetachFrom.js";
 import { RelateTo } from "./services/RelateTo.js";
 import { UpdateNode } from "./services/UpdateNode.js";
-import type {
-	EntityPropertyMap,
-	Integerable,
-	SerializedGraph,
-} from "./types.js";
-import { hasOwn, toJSInteger, toNeo4jInteger } from "./util/util.js";
+import type { SerializedGraph } from "./types/generalTypes.js";
+import type { EntityPropertyMap } from "./types/schemaTypes.js";
+import { hasOwn } from "./util/util.js";
 
 /**
  * Node Container

@@ -1,13 +1,11 @@
 import type { Model } from "./Model.js";
 import { Property } from "./Property.js";
 import type {
-	EntityPropertyMap,
 	NodeProperty,
 	NodesPropertyTypes,
-	RelationshipLikePropertyObject,
 	RelationshipPropertyTypes,
 	SchemaObject,
-} from "./types.js";
+} from "./types/schemaTypes.js";
 
 export enum RelationshipDirectionEnum {
 	IN = "DIRECTION_IN",
@@ -140,6 +138,13 @@ export class RelationshipType<
 	}
 
 	/**
+	 * Get Properties defined for this relationship
+	 */
+	public get properties() {
+		return this._properties;
+	}
+
+	/**
 	 * Set Direction of relationship
 	 */
 	public setDirection(
@@ -148,12 +153,5 @@ export class RelationshipType<
 		this._direction = direction;
 
 		return this;
-	}
-
-	/**
-	 * Get Properties defined for this relationship
-	 */
-	public get properties() {
-		return this._properties;
 	}
 }

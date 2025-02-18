@@ -1,5 +1,6 @@
 import neo4j, { type Integer, type Point } from "neo4j-driver";
-import type { NodePropertyObject, PointObject } from "../types.js";
+import type { PointObject } from "../types/generalTypes.js";
+import type { NodePropertyObject } from "../types/schemaTypes.js";
 import { hasOwn } from "../util/util.js";
 
 const temporal = [

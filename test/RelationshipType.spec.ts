@@ -7,7 +7,7 @@ import {
 	RelationshipType,
 } from "../src/RelationshipType.js";
 import type { Neode } from "../src/index.js";
-import type { SchemaObject } from "../src/types.js";
+import type { SchemaObject } from "../src/types/generalTypes.js";
 
 describe("RelationshipType", () => {
 	it("should construct", () => {

@@ -1,7 +1,4 @@
-import type {
-	Relationship as Neo4jRelationship,
-	QueryResult,
-} from "neo4j-driver";
+import type { Relationship as Neo4jRelationship } from "neo4j-driver";
 import type { Neode } from "../Neode.js";
 import type { Node } from "../Node.js";
 import { Relationship } from "../Relationship.js";
@@ -9,7 +6,7 @@ import {
 	RelationshipDirectionEnum,
 	type RelationshipType,
 } from "../RelationshipType.js";
-import type { EntityPropertyMap } from "../types.js";
+import type { EntityPropertyMap } from "../types/schemaTypes.js";
 import { GenerateDefaultValues } from "./GenerateDefaultValues.js";
 import { Validator } from "./Validator.js";
 

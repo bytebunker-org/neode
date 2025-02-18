@@ -4,13 +4,8 @@ import { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
 import { Node } from "../Node.js";
 import { DEFAULT_ALIAS, RelationshipType } from "../RelationshipType.js";
-import type { NodePropertyObject, SchemaObject } from "../types.js";
+import type { NodePropertyObject, SchemaObject } from "../types/schemaTypes.js";
 import { ValidationError } from "../util/ValidationError.js";
-
-const joi_options = {
-	allowUnknown: true,
-	abortEarly: false,
-};
 
 // TODO: Move these to constants and validate the model schemas a bit better
 const ignore = [
