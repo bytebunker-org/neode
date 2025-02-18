@@ -2,8 +2,8 @@ import { valueToCypher } from "../Entity.js";
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
 import { Node } from "../Node.js";
-import type { Builder } from "../Query/Builder.js";
 import type { RelationshipType } from "../RelationshipType.js";
+import type { Builder } from "../query/Builder.js";
 import { hasOwn } from "../util/util.js";
 import { GenerateDefaultValues } from "./GenerateDefaultValues.js";
 

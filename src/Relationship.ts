@@ -6,8 +6,8 @@ import {
 	RelationshipDirectionEnum,
 	type RelationshipType,
 } from "./RelationshipType.js";
-import { DeleteRelationship } from "./Services/DeleteRelationship.js";
-import { UpdateRelationship } from "./Services/UpdateRelationship.js";
+import { DeleteRelationship } from "./services/DeleteRelationship.js";
+import { UpdateRelationship } from "./services/UpdateRelationship.js";
 import type {
 	EntityPropertyMap,
 	Integerable,

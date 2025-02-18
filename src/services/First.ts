@@ -1,8 +1,8 @@
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
 import type { Node } from "../Node.js";
-import { Builder, QueryMode } from "../Query/Builder.js";
-import { eagerNode } from "../Query/EagerUtils.js";
+import { Builder, QueryMode } from "../query/Builder.js";
+import { eagerNode } from "../query/EagerUtils.js";
 
 export function First<T extends Record<string, unknown>>(
 	neode: Neode,

@@ -1,9 +1,9 @@
 import type { Model } from "../Model.js";
 import type { Neode } from "../Neode.js";
 import type { Node } from "../Node.js";
-import { Builder, QueryMode } from "../Query/Builder.js";
-import { eagerNode } from "../Query/EagerUtils.js";
-import { OrderDirectionEnum } from "../Query/Order.js";
+import { Builder, QueryMode } from "../query/Builder.js";
+import { eagerNode } from "../query/EagerUtils.js";
+import { OrderDirectionEnum } from "../query/Order.js";
 
 export async function FindAll<T extends Record<string, unknown>>(
 	neode: Neode,

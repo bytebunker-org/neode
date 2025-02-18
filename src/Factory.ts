@@ -3,13 +3,13 @@ import type { Model } from "./Model.js";
 import type { Neode } from "./Neode.js";
 import { Node } from "./Node.js";
 import { NodeCollection } from "./NodeCollection.js";
-import { EAGER_ID, EAGER_LABELS, EAGER_TYPE } from "./Query/EagerUtils.js";
 import { Relationship } from "./Relationship.js";
 import { RelationshipCollection } from "./RelationshipCollection.js";
 import {
 	RelationshipDirectionEnum,
 	type RelationshipType,
 } from "./RelationshipType.js";
+import { EAGER_ID, EAGER_LABELS, EAGER_TYPE } from "./query/EagerUtils.js";
 import type { EntityPropertyMap } from "./types.js";
 import { hasOwn } from "./util/util.js";
 

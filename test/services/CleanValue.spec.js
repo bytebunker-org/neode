@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import neo4j from "neo4j-driver";
-import CleanValue from "../../src/Services/CleanValue.js";
+import CleanValue from "../../src/services/CleanValue.js";
 
 describe("Services/CleanValue.js", () => {
 	it("should handle a float", () => {

@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import Node from "../../src/Node";
-import Create from "../../src/Services/Create.js";
-import FindAll from "../../src/Services/FindAll.js";
+import Create from "../../src/services/Create.js";
+import FindAll from "../../src/services/FindAll.js";
 
 const TIMEOUT = 10000;
 

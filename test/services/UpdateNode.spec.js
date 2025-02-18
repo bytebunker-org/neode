@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import Create from "../../src/Services/Create.js";
+import Create from "../../src/services/Create.js";
 
 describe("UpdateNode", () => {
 	let instance;

@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import GenerateDefaultValues from "../../src/Services/GenerateDefaultValues.js";
+import GenerateDefaultValues from "../../src/services/GenerateDefaultValues.js";
 
 describe("Services/GenerateDefaultValues.js", () => {
 	let instance;

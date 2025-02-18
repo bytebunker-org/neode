@@ -3,15 +3,15 @@ import type { Model } from "./Model.js";
 import type { Neode } from "./Neode.js";
 import type { Node } from "./Node.js";
 import type { NodeCollection } from "./NodeCollection.js";
-import { Builder } from "./Query/Builder.js";
-import type { OrderDirectionEnum } from "./Query/Order.js";
-import { Create } from "./Services/Create.js";
-import { DeleteAll } from "./Services/DeleteAll.js";
-import { FindAll } from "./Services/FindAll.js";
-import { FindById } from "./Services/FindById.js";
-import { FindWithinDistance } from "./Services/FindWithinDistance.js";
-import { First } from "./Services/First.js";
-import { MergeOn } from "./Services/MergeOn.js";
+import { Builder } from "./query/Builder.js";
+import type { OrderDirectionEnum } from "./query/Order.js";
+import { Create } from "./services/Create.js";
+import { DeleteAll } from "./services/DeleteAll.js";
+import { FindAll } from "./services/FindAll.js";
+import { FindById } from "./services/FindById.js";
+import { FindWithinDistance } from "./services/FindWithinDistance.js";
+import { First } from "./services/First.js";
+import { MergeOn } from "./services/MergeOn.js";
 import type { Integerable, PointObject } from "./types.js";
 
 export class Queryable<T extends Record<string, unknown>> {

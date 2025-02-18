@@ -3,7 +3,6 @@ import { Factory } from "../src/Factory.js";
 import { Model } from "../src/Model.js";
 import { Node } from "../src/Node.js";
 import { NodeCollection } from "../src/NodeCollection.js";
-import { EAGER_ID, EAGER_LABELS, eagerNode } from "../src/Query/EagerUtils.js";
 import { Relationship } from "../src/Relationship.js";
 import { RelationshipCollection } from "../src/RelationshipCollection.js";
 import {
@@ -11,6 +10,7 @@ import {
 	RelationshipType,
 } from "../src/RelationshipType.js";
 import type { Neode } from "../src/index.js";
+import { EAGER_ID, EAGER_LABELS, eagerNode } from "../src/query/EagerUtils.js";
 import { testNeodeInstance } from "./instance.js";
 
 describe("Factory", () => {

@@ -4,10 +4,10 @@ import type { Model } from "./Model.js";
 import type { Neode } from "./Neode.js";
 import type { Relationship } from "./Relationship.js";
 import { RelationshipType } from "./RelationshipType.js";
-import { DeleteNode } from "./Services/DeleteNode.js";
-import { DetachFrom } from "./Services/DetachFrom.js";
-import { RelateTo } from "./Services/RelateTo.js";
-import { UpdateNode } from "./Services/UpdateNode.js";
+import { DeleteNode } from "./services/DeleteNode.js";
+import { DetachFrom } from "./services/DetachFrom.js";
+import { RelateTo } from "./services/RelateTo.js";
+import { UpdateNode } from "./services/UpdateNode.js";
 import type {
 	EntityPropertyMap,
 	Integerable,

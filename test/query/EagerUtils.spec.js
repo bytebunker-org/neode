@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { eagerNode, eagerPattern } from "../../src/Query/EagerUtils.js";
+import { eagerNode, eagerPattern } from "../../src/query/EagerUtils.js";
 
 describe("Query/EagerUtils.js", () => {
 	const instance = require("../instance.js")();

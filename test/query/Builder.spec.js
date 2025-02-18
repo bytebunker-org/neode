@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import { int } from "neo4j-driver";
-import Builder, { mode } from "../../src/Query/Builder.js";
-import WhereStatement from "../../src/Query/WhereStatement.js";
 import RelationshipType from "../../src/RelationshipType";
+import Builder, { mode } from "../../src/query/Builder.js";
+import WhereStatement from "../../src/query/WhereStatement.js";
 
 describe("Query/Builder.js", () => {
 	let instance;
