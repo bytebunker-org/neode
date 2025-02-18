@@ -28,7 +28,9 @@
 			"types": "./lib/util/index.d.ts"
 		}
 	},
-	"files": ["lib/"],
+	"files": [
+		"lib/"
+	],
 	"scripts": {
 		"build": "tsc -p tsconfig.build.json",
 		"lint": "./node_modules/.bin/eslint src/",
@@ -39,7 +41,12 @@
 		"test:watch": "vitest",
 		"test:watch-ui": "vitest --ui"
 	},
-	"keywords": ["neo4j", "graph", "cypher", "ogm"],
+	"keywords": [
+		"neo4j",
+		"graph",
+		"cypher",
+		"ogm"
+	],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/bytebunker-org/neode.git"
@@ -57,6 +64,7 @@
 		"debug": "^4.4.0",
 		"dotenv": "^16.4.7",
 		"joi": "^17.13.3",
+		"js-convert-case": "^4.2.0",
 		"serialize-error": "^12.0.0",
 		"uuid": "^11.0.5"
 	},

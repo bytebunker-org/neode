@@ -504,6 +504,14 @@ export class Neode {
 	 * Run a batch of queries within a transaction
 	 */
 	public async batch(queries: Query[]): Promise<QueryResult[]> {
+		if (!queries) {
+			return Promise.resolve([]);
+		}
+
+		for (const query of queries) {
+			this.logger.logQuery(query, undefined);
+		}
+
 		return this.transaction(async (tx) => {
 			const results = await Promise.allSettled(
 				queries.map((query) => tx.run(query)),
