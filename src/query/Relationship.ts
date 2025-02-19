@@ -2,7 +2,7 @@ import { RelationshipDirectionEnum } from "../RelationshipType.js";
 
 export class Relationship {
 	constructor(
-		private readonly relationship?: string,
+		private readonly relationship?: string | string[],
 		private readonly direction?: RelationshipDirectionEnum,
 		private readonly alias?: string,
 		private readonly traversals?: number | string,

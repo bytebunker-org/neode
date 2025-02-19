@@ -111,7 +111,7 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 	 * Relate this node to another based on the type
 	 *
 	 * @param node Node to relate to
-	 * @param type Type of Relationship definition
+	 * @param relationshipKey Key of relationship on this node
 	 * @param properties Properties to set against the relationships
 	 * @param forceCreate Force the creation a new relationship? If false, the relationship will be merged
 	 */
@@ -120,15 +120,17 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 		R extends Record<string, unknown>,
 	>(
 		node: Node<O>,
-		type: string,
+		relationshipKey: keyof T & string,
 		properties: Partial<R> = {},
 		forceCreate = false,
 	): Promise<Relationship<R, T | O, T | O>> {
-		const relationshipType = this._model.relationships.get(type);
+		const relationshipType = this._model.relationships.get(relationshipKey);
 
 		if (!(relationshipType instanceof RelationshipType)) {
 			return Promise.reject(
-				new Error(`Cannot find relationship with type ${type}`),
+				new Error(
+					`Cannot find relationship with type ${relationshipKey}`,
+				),
 			);
 		}
 
@@ -140,7 +142,7 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 			properties,
 			forceCreate,
 		);
-		this._eager.delete(type);
+		this._eager.delete(relationshipKey);
 
 		return relationship;
 	}
@@ -184,38 +186,38 @@ export class Node<T extends Record<string, unknown>> extends Entity<T> {
 
 			// TODO: This code doesn't make sense, it tries to convert output[key] .. but output[key] is not yet set
 			/*
-			} else if (neo4j.temporal.isDateTime(output[key] as object)) {
-				output[key] = new Date(output[key].toString());
-			} else if (neo4j.spatial.isPoint(output[key])) {
-				switch (output[key].srid.toString()) {
-					// SRID values: @https://neo4j.com/docs/developer-manual/current/cypher/functions/spatial/
-					case "4326": // WGS 84 2D
-						output[key] = {
-							longitude: output[key].x,
-							latitude: output[key].y,
-						};
-						break;
+            } else if (neo4j.temporal.isDateTime(output[key] as object)) {
+                output[key] = new Date(output[key].toString());
+            } else if (neo4j.spatial.isPoint(output[key])) {
+                switch (output[key].srid.toString()) {
+                    // SRID values: @https://neo4j.com/docs/developer-manual/current/cypher/functions/spatial/
+                    case "4326": // WGS 84 2D
+                        output[key] = {
+                            longitude: output[key].x,
+                            latitude: output[key].y,
+                        };
+                        break;
 
-					case "4979": // WGS 84 3D
-						output[key] = {
-							longitude: output[key].x,
-							latitude: output[key].y,
-							height: output[key].z,
-						};
-						break;
+                    case "4979": // WGS 84 3D
+                        output[key] = {
+                            longitude: output[key].x,
+                            latitude: output[key].y,
+                            height: output[key].z,
+                        };
+                        break;
 
-					case "7203": // Cartesian 2D
-						output[key] = { x: output[key].x, y: output[key].y };
-						break;
+                    case "7203": // Cartesian 2D
+                        output[key] = { x: output[key].x, y: output[key].y };
+                        break;
 
-					case "9157": // Cartesian 3D
-						output[key] = {
-							x: output[key].x,
-							y: output[key].y,
-							z: output[key].z,
-						};
-						break;
-				}*/
+                    case "9157": // Cartesian 3D
+                        output[key] = {
+                            x: output[key].x,
+                            y: output[key].y,
+                            z: output[key].z,
+                        };
+                        break;
+                }*/
 		}
 
 		for (const eagerRelationship of this._model.eager) {

@@ -362,7 +362,7 @@ export class Neode {
 	 *
 	 * @param from Origin node
 	 * @param to Target node
-	 * @param type Type of Relationship definition
+	 * @param relationshipKey Key of relationship on the from node
 	 * @param properties Properties to set against the relationships
 	 * @param forceCreate Force the creation a new relationship? If false, the relationship will be merged
 	 */
@@ -373,11 +373,11 @@ export class Neode {
 	>(
 		from: Node<T>,
 		to: Node<O>,
-		type: string,
+		relationshipKey: keyof T & string,
 		properties: Partial<R> = {},
 		forceCreate = false,
 	): Promise<Relationship<R, T | O, T | O>> {
-		return from.relateTo(to, type, properties, forceCreate);
+		return from.relateTo(to, relationshipKey, properties, forceCreate);
 	}
 
 	/**

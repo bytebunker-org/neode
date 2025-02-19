@@ -63,44 +63,44 @@ export class Model<T extends Record<string, unknown>> extends Queryable<T> {
 		}
 
 		for (const [key, value] of Object.entries(schema)) {
-			if (!["labels"].includes(key)) {
-				const nodeProperty = value as NodeProperty;
+			if (key === "labels") {
+				continue;
+			}
 
-				if (typeof nodeProperty === "string") {
-					this.addProperty(key, nodeProperty);
-				} else {
-					if (
-						nodeProperty.type &&
-						RELATIONSHIP_TYPES.includes(nodeProperty.type)
-					) {
-						const relationProperty =
-							nodeProperty as RelationshipLikePropertyObject;
+			const nodeProperty = value as NodeProperty;
 
-						const {
-							relationship,
-							direction,
-							target,
-							properties,
-							eager,
-							cascade,
-							alias,
-						} = relationProperty;
+			if (typeof nodeProperty === "string") {
+				this.addProperty(key, nodeProperty);
+			} else if (
+				nodeProperty.type &&
+				RELATIONSHIP_TYPES.includes(nodeProperty.type)
+			) {
+				const relationProperty =
+					nodeProperty as RelationshipLikePropertyObject;
 
-						this.relationship(
-							key,
-							relationProperty.type,
-							relationship,
-							direction,
-							target,
-							properties,
-							eager,
-							cascade,
-							alias,
-						);
-					} else {
-						this.addProperty(key, nodeProperty);
-					}
-				}
+				const {
+					relationship,
+					direction,
+					target,
+					properties,
+					eager,
+					cascade,
+					alias,
+				} = relationProperty;
+
+				this.relationship(
+					key,
+					relationProperty.type,
+					relationship,
+					direction,
+					target,
+					properties,
+					eager,
+					cascade,
+					alias,
+				);
+			} else {
+				this.addProperty(key, nodeProperty);
 			}
 		}
 	}
@@ -254,6 +254,13 @@ export class Model<T extends Record<string, unknown>> extends Queryable<T> {
 		cascade: boolean | RelationshipCascadePolicyEnum = false,
 		nodeAlias = "node",
 	): RelationshipType<Record<string, unknown>> | undefined {
+		console.log(
+			"setting relationship",
+			name,
+			relationship,
+			direction,
+			schema,
+		);
 		if (relationship && direction && schema) {
 			this._relationships.set(
 				name,

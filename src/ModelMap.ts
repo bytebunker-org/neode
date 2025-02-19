@@ -67,7 +67,10 @@ export class ModelMap extends Map<string, Model<Record<string, unknown>>> {
 		labels.sort();
 
 		// Merge Schema
-		const schema = Object.assign({}, original.schema, using);
+		const schema = {
+			...original.schema,
+			...using,
+		};
 
 		// Create and set
 		const model = new Model(this._neode, as, schema);
