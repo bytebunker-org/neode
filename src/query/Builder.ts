@@ -107,10 +107,13 @@ export class Builder {
 		this.whereStatement("WHERE");
 		this.statement();
 
+		const modelObj =
+			typeof model === "string" ? this._neode.model<T>(model) : model;
+
 		(this.current as Statement<T>).match(
 			new Match(
 				alias,
-				model,
+				modelObj,
 				this._convertPropertyMap(alias, properties),
 			),
 		);
@@ -125,7 +128,10 @@ export class Builder {
 		this.whereStatement("WHERE");
 		this.statement("OPTIONAL MATCH");
 
-		(this.current as Statement<T>).match(new Match(alias, model));
+		const modelObj =
+			typeof model === "string" ? this._neode.model<T>(model) : model;
+
+		(this.current as Statement<T>).match(new Match(alias, modelObj));
 
 		return this;
 	}
@@ -418,10 +424,13 @@ export class Builder {
 		this.whereStatement("WHERE");
 		this.statement("CREATE");
 
+		const modelObj =
+			typeof model === "string" ? this._neode.model<T>(model) : model;
+
 		(this.current as Statement<T>).match(
 			new Match(
 				alias,
-				model,
+				modelObj,
 				this._convertPropertyMap(alias, properties),
 			),
 		);
@@ -438,16 +447,19 @@ export class Builder {
 	 */
 	public merge<T extends Record<string, unknown>>(
 		alias?: string,
-		model?: string | Model<T>,
+		model?: Model<T> | string,
 		properties: Partial<T> = {},
 	): this {
 		this.whereStatement("WHERE");
 		this.statement("MERGE");
 
+		const modelObj =
+			typeof model === "string" ? this._neode.model<T>(model) : model;
+
 		(this.current as Statement<T>).match(
 			new Match(
 				alias,
-				model,
+				modelObj,
 				this._convertPropertyMap(alias, properties),
 			),
 		);
@@ -739,10 +751,13 @@ export class Builder {
 		model?: Model<T> | string,
 		properties: Partial<T> = {},
 	): this {
+		const modelObj =
+			typeof model === "string" ? this._neode.model<T>(model) : model;
+
 		(this.current as Statement<T>).match(
 			new Match(
 				alias,
-				model,
+				modelObj,
 				this._convertPropertyMap(alias, properties),
 			),
 		);

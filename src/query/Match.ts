@@ -8,7 +8,7 @@ export class Match<
 > {
 	constructor(
 		private readonly alias?: string,
-		private readonly model?: Model<T> | string,
+		private readonly model?: Model<T>,
 		private readonly properties: Property[] = [],
 	) {}
 
@@ -19,8 +19,6 @@ export class Match<
 
 		if (this.model instanceof Model) {
 			modelName = `:${this.model.labels.join(":")}`;
-		} else if (typeof this.model === "string") {
-			modelName = `:${this.model}`;
 		}
 
 		if (this.properties.length) {
