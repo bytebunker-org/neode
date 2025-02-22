@@ -1,6 +1,6 @@
 {
 	"name": "@bytebunker/neode",
-	"version": "0.5.1",
+	"version": "0.5.2",
 	"description": "Neo4j OGM for NodeJS",
 	"type": "module",
 	"main": "lib/index.js",
