@@ -8,29 +8,27 @@
 	"types": "lib/index.d.ts",
 	"exports": {
 		".": {
-			"import": "./lib/index.js",
-			"types": "./lib/index.d.ts"
+			"types": "./lib/index.d.ts",
+			"import": "./lib/index.js"
 		},
 		"./logger": {
-			"import": "./lib/logger/index.js",
-			"types": "./lib/logger/index.d.ts"
+			"types": "./lib/logger/index.d.ts",
+			"import": "./lib/logger/index.js"
 		},
 		"./query": {
-			"import": "./lib/query/index.js",
-			"types": "./lib/query/index.d.ts"
+			"types": "./lib/query/index.d.ts",
+			"import": "./lib/query/index.js"
 		},
 		"./types": {
-			"import": "./lib/types/index.js",
-			"types": "./lib/types/index.d.ts"
+			"types": "./lib/types/index.d.ts",
+			"import": "./lib/types/index.js"
 		},
 		"./util": {
-			"import": "./lib/util/index.js",
-			"types": "./lib/util/index.d.ts"
+			"types": "./lib/util/index.d.ts",
+			"import": "./lib/util/index.js"
 		}
 	},
-	"files": [
-		"lib/"
-	],
+	"files": ["lib/"],
 	"scripts": {
 		"build": "tsc -p tsconfig.build.json",
 		"lint": "./node_modules/.bin/eslint src/",
@@ -41,15 +39,10 @@
 		"test:watch": "vitest",
 		"test:watch-ui": "vitest --ui"
 	},
-	"keywords": [
-		"neo4j",
-		"graph",
-		"cypher",
-		"ogm"
-	],
+	"keywords": ["neo4j", "graph", "cypher", "ogm"],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/bytebunker-org/neode.git"
+		"url": "git+https://github.com/bytebunker-org/neode.git"
 	},
 	"author": "Adam Cowley <github@adamcowley.co.uk>",
 	"contributors": [
@@ -72,11 +65,6 @@
 		"neo4j-driver": "^5.28.1"
 	},
 	"devDependencies": {
-		"@babel/cli": "^7.8.4",
-		"@babel/core": "^7.9.6",
-		"@babel/node": "^7.8.4",
-		"@babel/preset-env": "^7.9.6",
-		"@babel/register": "^7.8.6",
 		"@biomejs/biome": "1.9.4",
 		"@types/debug": "^4.1.12",
 		"@types/node": "^22.13.4",
