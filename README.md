@@ -1,6 +1,14 @@
 # Neode
 
-Neode is a Neo4j OGM for Node JS designed to take care of the CRUD boilerplate involved with setting up a neo4j project with Node.  Just install, set up your models and go.
+Neode is a Neo4j OGM for Node.js designed to take care of the CRUD boilerplate involved with setting up a neo4j project with Node. Just install, set up your models and go.
+
+> [!IMPORTANT]  
+> This fork rewrites neode to Typescript, clean up and introduce some small new features currently.
+> 
+> While it is usable and most previous tests are passing, it is still a work in progress and the documentation
+> will be updated soon to reflect the changes. Expect a couple of **breaking changes**, most importantly that a lot of functions
+> which were previously similar to getters, are now actually getters (so the function brackets have to be removed).
+> But this shouldn't be a big issue, Typescript issues should highlight almost all migration issues.
 
 - [Getting Started](#getting-started)
 - [Reading from the Graph](#reading)
