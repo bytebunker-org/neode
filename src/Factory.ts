@@ -18,6 +18,10 @@ interface RawDataRecord extends Record<string, unknown> {
 	[EAGER_ID]: string;
 	[EAGER_LABELS]?: string[];
 	[EAGER_TYPE]?: string;
+
+	elementId?: string;
+	labels?: string[];
+	properties?: Record<string, unknown>;
 }
 
 export class Factory {
@@ -148,20 +152,20 @@ export class Factory {
 	/**
 	 * Take a result object and convert it into a Model
 	 */
-	private hydrateNode<T extends Record<string, unknown>>(
+	public hydrateNode<T extends Record<string, unknown>>(
 		record: RawDataRecord,
 		definitionOrString?: Model<T> | string,
 	): Node<T> {
-		if (!hasOwn(record, EAGER_ID) || typeof record[EAGER_ID] !== "string") {
+		const identity = record[EAGER_ID] ?? record.elementId;
+
+		// Get Internals
+		const labels = record[EAGER_LABELS] ?? record.labels;
+
+		if (!identity || typeof identity !== "string") {
 			throw new Error(
 				`No node identity found in record ${JSON.stringify(record, null, 2)}`,
 			);
 		}
-
-		const identity = record[EAGER_ID];
-
-		// Get Internals
-		const labels = record[EAGER_LABELS];
 
 		let definition: Model<T> | undefined;
 

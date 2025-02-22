@@ -151,9 +151,9 @@ export abstract class AbstractLogger implements Logger {
 		);
 
 		return (
-			queryString +
+			queryString.replace(/\n/g, " ") +
 			(hasParameters
-				? `\n-- Parameters: ${this.stringifyParams(queryParameters!)}`
+				? ` -- Parameters: ${this.stringifyParams(queryParameters!)}`
 				: "")
 		);
 	}

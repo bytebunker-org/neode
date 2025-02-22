@@ -76,7 +76,7 @@ export class Neode {
 	private readonly _schema: Schema;
 	private readonly _driver: Driver;
 	private readonly _models: ModelMap;
-	private factory: Factory;
+	private _factory: Factory;
 	private database?: string;
 	private _enterprise: boolean;
 
@@ -99,7 +99,7 @@ export class Neode {
 
 		this._models = new ModelMap(this);
 		this._schema = new Schema(this);
-		this.factory = new Factory(this);
+		this._factory = new Factory(this);
 
 		this.database = options.database;
 
@@ -115,6 +115,10 @@ export class Neode {
 
 	public get driver(): neo4j.Driver {
 		return this._driver;
+	}
+
+	public get factory(): Factory {
+		return this._factory;
 	}
 
 	/**
@@ -711,7 +715,7 @@ export class Neode {
 		alias: string,
 		definition?: Model<T> | string,
 	): NodeCollection<T> {
-		return this.factory.hydrate(result, alias, definition);
+		return this._factory.hydrate(result, alias, definition);
 	}
 
 	/**
@@ -748,7 +752,7 @@ export class Neode {
 		definition?: Model<T> | string,
 		throwOnMissing = true,
 	): Node<T> | undefined {
-		return this.factory.hydrateFirst(
+		return this._factory.hydrateFirst(
 			result,
 			alias,
 			definition,
